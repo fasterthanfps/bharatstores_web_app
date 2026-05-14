@@ -85,12 +85,20 @@ export async function POST(req: NextRequest) {
 
         if (scraperResults) {
             const serviceClient = createServiceClient();
-            const listings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
+            const rawListings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
             
-            const scored = sortByRelevance(listings, queryLower, synonyms, sortCol);
+            // Deduplicate
+            const seen = new Set<string>();
+            const uniqueListings = rawListings.filter(l => {
+                if (seen.has(l.id)) return false;
+                seen.add(l.id);
+                return true;
+            });
+
+            const scored = sortByRelevance(uniqueListings, queryLower, synonyms, sortCol);
             const { exact, related } = splitExactVsRelated(scored, queryLower, synonyms);
 
-            console.log(`[Cache Refresh] Fresh scrape saved ${listings.length} listings for "${query}"`);
+            console.log(`[Cache Refresh] Fresh scrape saved ${uniqueListings.length} listings for "${query}"`);
             
             return NextResponse.json({ 
                 success: true, 

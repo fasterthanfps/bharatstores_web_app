@@ -251,8 +251,17 @@ export async function GET(req: NextRequest) {
 
         if (scraperResults) {
             const serviceClient = createServiceClient();
-            const listings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
-            const scored = sortByRelevance(listings, queryLower, synonyms, sortCol);
+            const liveListings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
+            
+            // Deduplicate live results
+            const seenLive = new Set<string>();
+            const uniqueLive = liveListings.filter(l => {
+                if (seenLive.has(l.id)) return false;
+                seenLive.add(l.id);
+                return true;
+            });
+
+            const scored = sortByRelevance(uniqueLive, queryLower, synonyms, sortCol);
             const { exact, related } = splitExactVsRelated(scored, queryLower, synonyms);
             return NextResponse.json({
                 success: true,
