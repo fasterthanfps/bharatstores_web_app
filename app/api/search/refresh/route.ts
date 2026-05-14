@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         const scraperResults: any = await Promise.race([
             orchestrator.runAll(query),
             new Promise<null>((_, reject) =>
-                setTimeout(() => reject(new Error('Scraper timeout')), 45000)
+                setTimeout(() => reject(new Error('Scraper timeout')), 60000)
             ),
         ]);
 
@@ -141,6 +141,17 @@ function scoreRelevance(listing: any, queryLower: string, synonyms: string[]): n
         const synRe = new RegExp(`\\b${synEsc}\\b`);
         if (synRe.test(name)) return 65;
         if (name.includes(syn)) return 55;
+    }
+
+    // Popular Brand Boost (e.g., Kissan, Maggi, MDH)
+    const popularBrands = ['kissan', 'maggi', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali', 'aashirvaad', 'heera'];
+    for (const brand of popularBrands) {
+        if (name.includes(brand)) {
+            // Only boost if it also matches the query somehow
+            if (name.includes(queryLower) || synonyms.some(s => name.includes(s))) {
+                return 110; // Top tier boost for branded matches
+            }
+        }
     }
 
     const qTokens = queryLower.split(/\s+/).filter(t => t.length >= 3);
@@ -217,8 +228,14 @@ async function saveAndReturnListings(
             const store = storeMap.get(storeDomain);
             if (!store) continue;
 
-            const productCategory = inferCategory(item.name, query);
-            const slug = item.name
+            // Clean name of redundant phrases
+            const cleanName = item.name
+                .replace(/\s*[|-]?\s*Details in the shop/gi, '')
+                .replace(/\s*[|-]?\s*Details im shop/gi, '')
+                .trim();
+
+            const productCategory = inferCategory(cleanName, query);
+            const slug = cleanName
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-+|-+$/g, '')
@@ -228,7 +245,7 @@ async function saveAndReturnListings(
                 const { data: product } = await supabase
                     .from('products')
                     .upsert(
-                        { name: item.name, slug, category: productCategory, search_terms: [queryLower] },
+                        { name: cleanName, slug, category: productCategory, search_terms: [queryLower] },
                         { onConflict: 'slug', ignoreDuplicates: false }
                     )
                     .select()

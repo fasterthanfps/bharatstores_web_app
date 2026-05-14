@@ -23,14 +23,16 @@ export class SpiceVillageScraper extends BaseScraper {
 
         for (const url of endpoints) {
             try {
-                const res = await fetch(url, {
+                const res = await this.fetchWithRetry(url, {
                     headers: {
                         'Accept': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     },
                     signal: AbortSignal.timeout(10000),
                 });
-                if (!res.ok) continue;
+                if (!res.ok) {
+                    errors.push(`SpiceVillage HTTP ${res.status} for ${url}`);
+                    continue;
+                }
 
                 const contentType = res.headers.get('content-type') || '';
                 if (!contentType.includes('json')) continue;

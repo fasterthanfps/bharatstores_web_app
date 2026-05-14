@@ -7,6 +7,29 @@ export abstract class BaseScraper {
     abstract storeName: string;
     abstract scrape(query: string): Promise<ScraperResult>;
 
+    protected commonUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+    protected async fetchWithRetry(url: string, options: RequestInit = {}, retries = 1): Promise<Response> {
+        const defaultHeaders = {
+            'User-Agent': this.commonUserAgent,
+            'Accept': 'application/json, text/html, application/xhtml+xml, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+        };
+
+        options.headers = { ...defaultHeaders, ...options.headers };
+
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const res = await fetch(url, options);
+                if (res.ok || i === retries) return res;
+            } catch (e) {
+                if (i === retries) throw e;
+            }
+            await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+        return fetch(url, options); // Should not reach here
+    }
+
     protected parsePrice(raw: string): number {
         // Remove currency symbols, spaces; normalize decimal separator
         const cleaned = raw.replace(/[€$£\s\u00a0]/g, '').replace(',', '.');

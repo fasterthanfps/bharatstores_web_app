@@ -24,8 +24,8 @@ export class AngaadiScraper extends BaseScraper {
 
         // Try WC Store API first
         try {
-            const res = await fetch(apiUrls[0], {
-                headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+            const res = await this.fetchWithRetry(apiUrls[0], {
+                headers: { 'Accept': 'application/json' },
                 signal: AbortSignal.timeout(8000),
             });
             if (res.ok) {
@@ -77,7 +77,7 @@ export class AngaadiScraper extends BaseScraper {
 
                     const html = await res.text();
                     const $ = cheerio.load(html);
-                    const found = this.parseWooCommerceHtml($);
+                    const found = this.parseWooCommerceHtml($, res.url);
                     listings.push(...found);
                     if (listings.length > 0) break;
                 } catch (e: any) {
@@ -89,9 +89,38 @@ export class AngaadiScraper extends BaseScraper {
         return this.buildResult(listings, start, errors);
     }
 
-    private parseWooCommerceHtml($: cheerio.CheerioAPI): ScrapedListing[] {
+    private parseWooCommerceHtml($: cheerio.CheerioAPI, currentUrl?: string): ScrapedListing[] {
         const listings: ScrapedListing[] = [];
 
+        // 1. Check if this is a single product page (redirected)
+        const singleTitle = $('.product_title').first().text().trim();
+        const singlePriceText = $('.woocommerce-Price-amount').first().text().trim();
+        if (singleTitle && singlePriceText && currentUrl && currentUrl.includes('/product/')) {
+            const priceMatch = singlePriceText.match(/(\d+)[,.](\d{2})/);
+            if (priceMatch) {
+                const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
+                const imgSrc = $('.woocommerce-product-gallery__image img').first().attr('src') || '';
+                const outOfStock = $('.out-of-stock').length > 0;
+                const weightGrams = this.parseWeightToGrams(singleTitle);
+
+                listings.push({
+                    storeName: this.storeName,
+                    storeId: this.storeId,
+                    productUrl: currentUrl,
+                    name: singleTitle,
+                    price,
+                    imageUrl: imgSrc,
+                    availability: outOfStock ? 'OUT_OF_STOCK' : 'IN_STOCK',
+                    weightLabel: this.extractWeightLabel(singleTitle),
+                    weightGrams,
+                    pricePerKg: this.computePricePerKg(price, weightGrams),
+                    scrapedAt: new Date(),
+                });
+                return listings; // Only one product on this page
+            }
+        }
+
+        // 2. Otherwise parse as a list
         $('li.product, .product-type-simple, .type-product').slice(0, 20).each((_, el) => {
             try {
                 const $el = $(el);

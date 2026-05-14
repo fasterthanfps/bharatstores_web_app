@@ -32,10 +32,10 @@ export default function ListingCard({ listing, isLowest, rank, index = 0 }: List
 
     return (
         <article
-            className={`listing-card animate-card relative overflow-hidden rounded-[2rem] border flex flex-col sm:flex-row group
+            className={`listing-card animate-card relative overflow-hidden rounded-[2.5rem] border flex flex-col sm:flex-row group transition-all duration-500
                 ${isLowest && !isUnavailable
-                    ? 'bg-gradient-to-br from-emerald-50/80 via-white to-white border-emerald-200 shadow-md shadow-emerald-100/50'
-                    : 'bg-white border-masala-border shadow-sm'
+                    ? 'bg-gradient-to-br from-emerald-50/60 via-white/40 to-white/20 border-emerald-300/40 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl'
+                    : 'bg-white/40 border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_48px_rgba(192,57,43,0.08)] hover:border-white/50 backdrop-blur-xl'
                 }
                 ${isUnavailable ? 'opacity-55' : ''}
             `}
@@ -134,10 +134,10 @@ export default function ListingCard({ listing, isLowest, rank, index = 0 }: List
                         </div>
 
                         {/* Price block */}
-                        <div className={`text-right flex-shrink-0 rounded-2xl px-4 py-3 min-w-[106px] transition-all duration-300 ${
+                        <div className={`text-right flex-shrink-0 rounded-[2rem] px-5 py-4 min-w-[110px] transition-all duration-500 group-hover:scale-105 ${
                             isLowest && !isUnavailable
-                                ? 'bg-emerald-500/10 border border-emerald-200'
-                                : 'bg-masala-pill/60 border border-masala-border group-hover:border-masala-primary/15'
+                                ? 'bg-emerald-500/10 border border-emerald-200/50 shadow-inner shadow-emerald-500/5'
+                                : 'bg-masala-pill/40 border border-masala-border/40 group-hover:bg-white group-hover:border-masala-primary/20 shadow-sm'
                         }`}>
                             <span
                                 className={`animate-price-pop block text-2xl sm:text-3xl font-black font-serif tracking-tight ${

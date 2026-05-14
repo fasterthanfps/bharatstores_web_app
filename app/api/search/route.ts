@@ -86,6 +86,17 @@ function scoreRelevance(listing: any, queryLower: string, synonyms: string[]): n
         if (name.includes(syn)) return 55;
     }
 
+    // Popular Brand Boost (e.g., Kissan, Maggi, MDH)
+    const popularBrands = ['kissan', 'maggi', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali', 'aashirvaad', 'heera'];
+    for (const brand of popularBrands) {
+        if (name.includes(brand)) {
+            // Only boost if it also matches the query somehow
+            if (name.includes(queryLower) || synonyms.some(s => name.includes(s))) {
+                return 110; // Top tier boost for branded matches
+            }
+        }
+    }
+
     // ── Tier 6: Token overlap ───────────────────────────────────────────────────
     const qTokens = queryLower.split(/\s+/).filter(t => t.length >= 3);
     const nameTokens2 = name.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 2);
