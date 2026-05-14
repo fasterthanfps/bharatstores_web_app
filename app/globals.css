@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+@theme {
+  --color-masala-bg: #fdf6ec;
+  --color-masala-text: #2c1810;
+  --color-masala-primary: #c0392b;
+  --color-masala-secondary: #922b21;
+  --color-masala-dark: #641e16;
+  --color-masala-border: #f0e0cc;
+  --color-masala-border-hover: #e8d5bf;
+  --color-masala-card: #ffffff;
+  --color-masala-pill: #fdf0e6;
+  --color-masala-pill-border: #f5dfc8;
+  
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: var(--font-playfair), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-masala-bg);
+  color: var(--color-masala-text);
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(var(--color-masala-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6, .font-serif {
+  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-masala-bg); }
+::-webkit-scrollbar-thumb { 
+  background: #e8d5bf; 
+  border-radius: 20px;
+  border: 2px solid var(--color-masala-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-masala-primary); }
+
+/* Premium Gradients */
+.gradient-header {
+  background: linear-gradient(135deg, #c0392b 0%, #922b21 50%, #641e16 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #c0392b 0%, #922b21 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+.glass-header {
+  background: rgba(253, 246, 236, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(240, 224, 204, 0.5);
+}
+
+/* ── Core Animations ───────────────────────────────────────────────────────── */
+
+/* Fade + slide up — default entry */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Staggered card entrance */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-card {
+  animation: cardReveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-card:nth-child(1)  { animation-delay: 0ms; }
+.animate-card:nth-child(2)  { animation-delay: 60ms; }
+.animate-card:nth-child(3)  { animation-delay: 120ms; }
+.animate-card:nth-child(4)  { animation-delay: 180ms; }
+.animate-card:nth-child(5)  { animation-delay: 240ms; }
+.animate-card:nth-child(6)  { animation-delay: 300ms; }
+.animate-card:nth-child(7)  { animation-delay: 360ms; }
+.animate-card:nth-child(8)  { animation-delay: 420ms; }
+.animate-card:nth-child(9)  { animation-delay: 480ms; }
+.animate-card:nth-child(10) { animation-delay: 540ms; }
+
+/* Price pop — number springs into view */
+@keyframes pricePop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(6px); }
+  70%  { transform: scale(1.08) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-price-pop {
+  animation: pricePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Badge glow pulse for "Exact Match" label */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); }
+  50%       { box-shadow: 0 0 12px 4px rgba(192, 57, 43, 0.2); }
+}
+.animate-glow-pulse {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* Shimmer sweep on skeleton & cards */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Float — search icon, empty state */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+.animate-float {
+  animation: float 2.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+/* Slide in from bottom */
+@keyframes slideInFromBottom {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: slideInFromBottom 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Rank badge spin-in */
+@keyframes rankSpin {
+  from { opacity: 0; transform: rotate(-30deg) scale(0.5); }
+  to   { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+.animate-rank {
+  animation: rankSpin 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Soft scale-up for modals / cards */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Spinner for loading */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.9s linear infinite;
+}
+
+/* Ping pulse for status dots */
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+.animate-ping {
+  animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Heartbeat — for cheapest price badge */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%       { transform: scale(1.15); }
+  28%       { transform: scale(1); }
+  42%       { transform: scale(1.08); }
+  70%       { transform: scale(1); }
+}
+.animate-heartbeat {
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+/* Float Soft — for Best Price badge */
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-3px) rotate(1deg); }
+}
+.animate-float-badge {
+  animation: floatBadge 3s ease-in-out infinite;
+}
+
+/* Subtle background shimmer on card hover */
+@keyframes cardShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── Interactive Elements ─────────────────────────────────────────────────── */
+
+a, button {
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Listing card hover — lift + sharper shadow */
+.listing-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s ease;
+}
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px -8px rgba(192, 57, 43, 0.12), 0 4px 16px -4px rgba(0,0,0,0.06);
+  border-color: rgba(192, 57, 43, 0.2) !important;
+}
+.listing-card:active {
+  transform: translateY(-1px);
+  transition-duration: 0.1s;
+}
+
+/* Cheapest listing highlight */
+.listing-cheapest {
+  border: 1.5px solid #82e0aa !important;
+  background: linear-gradient(135deg, #eafaf1 0%, #f0fdf4 100%) !important;
+}
+
+/* ── Typography for mobile ──────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  h1 { font-size: 2.25rem !important; line-height: 1.2 !important; }
+  h2 { font-size: 1.5rem !important; }
+}
+
+/* ── Search bar focus ring animation ────────────────────────────────────── */
+@keyframes focusRing {
+  from { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4); }
+  to   { box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.12); }
+}
+input:focus {
+  animation: focusRing 0.2s ease forwards;
+}
+
+/* ── Section divider slide-in ───────────────────────────────────────────── */
+@keyframes dividerExpand {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+.animate-divider {
+  transform-origin: left;
+  animation: dividerExpand 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Counter number roll ─────────────────────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-count {
+  animation: countUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

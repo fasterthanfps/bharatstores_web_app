@@ -1,0 +1,16 @@
+{
+    "functions": {
+        "app/api/search/route.ts": {
+            "maxDuration": 30
+        },
+        "app/api/scraper/run/route.ts": {
+            "maxDuration": 60
+        }
+    },
+    "crons": [
+        {
+            "path": "/api/scraper/run",
+            "schedule": "0 */6 * * *"
+        }
+    ]
+}
