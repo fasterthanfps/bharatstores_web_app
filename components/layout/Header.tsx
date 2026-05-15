@@ -1,15 +1,31 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Bell, User, Menu, X, BookOpen } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LanguageToggle from '@/components/layout/LanguageToggle';
 import SearchAutocomplete from '@/components/search/SearchAutocomplete';
 import { useLang } from '@/lib/utils/LanguageContext';
 
 export default function Header() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+    const pathname = usePathname();
     const { t } = useLang();
+
+    const isHome = pathname === '/';
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 200);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // On homepage, hide mobile search bar until scrolled
+    const showMobileSearch = !isHome || scrolled;
 
     return (
         <header className="sticky top-0 z-50 bg-masala-bg/90 backdrop-blur-xl shadow-[0_1px_0_0_rgba(240,224,204,0.8)] border-b border-masala-border/50">
@@ -24,8 +40,8 @@ export default function Header() {
                         </span>
                     </Link>
 
-                    {/* Search Bar — center/flex-grow */}
-                    <div className="hidden md:flex flex-1 justify-center px-4 max-w-2xl mx-auto">
+                    {/* Search Bar — center/flex-grow (Desktop always, Mobile on scroll) */}
+                    <div className={`hidden md:flex flex-1 justify-center px-4 max-w-2xl mx-auto transition-opacity duration-300 ${isHome && !scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                         <SearchAutocomplete size="header" />
                     </div>
 
@@ -74,10 +90,12 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Mobile search bar row */}
-                <div className="md:hidden pb-3">
-                    <SearchAutocomplete size="header" />
-                </div>
+                {/* Mobile search bar row — only if not home or scrolled */}
+                {showMobileSearch && (
+                    <div className="md:hidden pb-3 animate-fade-in">
+                        <SearchAutocomplete size="header" />
+                    </div>
+                )}
             </div>
 
             {/* Mobile Menu */}

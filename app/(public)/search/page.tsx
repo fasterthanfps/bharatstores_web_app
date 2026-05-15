@@ -131,50 +131,41 @@ function SearchPageContent() {
   const totalCount = results.length;
 
   return (
-    <div className="min-h-screen pb-24">
-      {/* Sticky search bar */}
-      <div className="sticky top-0 z-40 bg-masala-bg/95 backdrop-blur-md border-b border-masala-border shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
-          <SearchAutocomplete initialQuery={filters.q} size="header" />
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen pb-24 bg-masala-bg">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Results header */}
         {displayQuery && !loading && (
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              {exactResults.length > 0 && (
-                <span className="px-3 py-1 bg-masala-pill rounded-full text-[11px] font-black uppercase tracking-widest text-masala-primary border border-masala-border">
-                  {exactResults.length} Exact
-                </span>
-              )}
-              <h2 className="text-xl sm:text-2xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
-                {totalCount > 0 ? `${totalCount} results for ` : `No results for `}
-                <span className="text-masala-primary">&ldquo;{displayQuery}&rdquo;</span>
-              </h2>
+          <div className="flex flex-col gap-4 mb-6 animate-fade-in">
+            {/* Row 1: Count + Refresh */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
+                  {totalCount} <span className="text-masala-text-muted text-lg sm:text-xl font-medium">results for</span>
+                  <br className="sm:hidden" />
+                  <span className="text-masala-primary sm:ml-2">&ldquo;{displayQuery}&rdquo;</span>
+                </h1>
+              </div>
               
-              {/* REFRESH BUTTON (FIX) */}
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-masala-border bg-white text-[11px] font-black uppercase tracking-widest hover:border-masala-primary hover:text-masala-primary transition-all active:scale-95 ${refreshing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                title="Refresh Prices"
+                className={`p-2.5 rounded-xl border border-masala-border bg-white text-masala-text shadow-sm hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 ${refreshing ? 'opacity-50' : ''}`}
               >
-                <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh Prices'}
+                <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin text-masala-primary' : ''}`} />
               </button>
             </div>
 
-            {/* Sort tabs + mobile filter button */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-white border border-masala-border rounded-xl p-1">
+            {/* Row 2: Sort + Filters (Compact) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+              <div className="flex items-center gap-1 bg-white border border-masala-border rounded-xl p-1 shadow-sm flex-shrink-0">
                 {SORT_TABS.map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setFilters({ sort: tab.id })}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                       filters.sort === tab.id
-                        ? 'bg-masala-primary text-white shadow-sm'
+                        ? 'bg-masala-primary text-white'
                         : 'text-masala-text-muted hover:text-masala-text'
                     }`}
                   >
@@ -185,12 +176,12 @@ function SearchPageContent() {
 
               <button
                 onClick={() => setFilterOpen(true)}
-                className="lg:hidden relative flex items-center gap-1.5 px-3 py-2 bg-white border border-masala-border rounded-xl text-[12px] font-semibold text-masala-text hover:border-masala-primary/40 transition-colors min-h-[44px]"
+                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-masala-border rounded-xl text-[12px] font-bold text-masala-text shadow-sm hover:border-masala-primary transition-all whitespace-nowrap active:scale-95"
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4 text-masala-primary" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                  <span className="w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
@@ -201,7 +192,7 @@ function SearchPageContent() {
 
         {/* Active filter chips */}
         {hasActiveFilters && displayQuery && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-6">
             {filters.stores.map(storeId => {
               const config = getStoreConfig(storeId);
               return (
@@ -219,9 +210,9 @@ function SearchPageContent() {
             {filters.inStockOnly && (
               <button
                 onClick={() => setFilters({ inStockOnly: false })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-success-bg text-masala-success text-xs font-bold border border-masala-success/20 hover:opacity-80 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 hover:opacity-80 transition-all"
               >
-                In Stock Only <X className="h-3 w-3" />
+                In Stock <X className="h-3 w-3" />
               </button>
             )}
             {filters.maxPrice < 100 && (
@@ -232,23 +223,21 @@ function SearchPageContent() {
                 Max €{filters.maxPrice} <X className="h-3 w-3" />
               </button>
             )}
-            <button
-              onClick={clearFilters}
-              className="text-xs text-masala-text-muted hover:text-masala-primary underline ml-1 transition-colors"
-            >
+            <button onClick={clearFilters} className="text-xs text-masala-text-muted hover:text-masala-primary font-bold px-2 py-1 transition-colors">
               Clear all
             </button>
           </div>
         )}
 
         {/* Main layout */}
-        <div className="flex gap-6">
+        <div className="flex gap-8">
+          {/* Sidebar (hidden on mobile, but handles its own visibility) */}
           <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} />
 
           <div className="flex-1 min-w-0">
             {/* Loading skeletons */}
             {loading && filters.q && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
               </div>
             )}
@@ -261,14 +250,14 @@ function SearchPageContent() {
 
             {/* Exact matches */}
             {exactResults.length > 0 && (
-              <div className="mb-8">
+              <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="h-5 w-1 rounded-full bg-masala-primary block" />
-                  <p className="text-xs font-black uppercase tracking-widest text-masala-primary">
+                  <div className="h-5 w-1 rounded-full bg-masala-primary" />
+                  <p className="text-[11px] font-black uppercase tracking-widest text-masala-primary">
                     {exactResults.length} Exact {exactResults.length === 1 ? 'Match' : 'Matches'}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                   {exactResults.map((listing: any, i: number) => (
                     <ProductCard
                       key={listing.id}
@@ -288,12 +277,12 @@ function SearchPageContent() {
             {relatedResults.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="h-5 w-1 rounded-full bg-masala-border block" />
-                  <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">
+                  <div className="h-5 w-1 rounded-full bg-masala-border" />
+                  <p className="text-[11px] font-black uppercase tracking-widest text-masala-text-muted">
                     {relatedResults.length} Related Products
                   </p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                   {relatedResults.map((listing: any, i: number) => (
                     <ProductCard
                       key={listing.id}
@@ -308,9 +297,9 @@ function SearchPageContent() {
               </div>
             )}
 
-            {/* Fallback */}
+            {/* Fallback (if scores missing) */}
             {exactResults.length === 0 && relatedResults.length === 0 && results.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {results.map((listing: any, i: number) => (
                   <ProductCard
                     key={listing.id}
@@ -350,16 +339,16 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
           <span className="relative inline-flex rounded-full h-3 w-3 bg-masala-primary" />
         </span>
       </div>
-      <div className="text-center space-y-2 max-w-sm">
+      <div className="text-center space-y-2 max-w-sm px-4">
         <h2 className="text-2xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
           Searching for &ldquo;{query}&rdquo;
         </h2>
         <p className="text-masala-text-muted text-sm">Checking live prices across 8 Indian grocery stores…</p>
-        <span className="inline-flex items-center gap-1.5 text-xs font-black text-masala-primary bg-masala-pill px-3 py-1.5 rounded-full border border-masala-border">
+        <span className="inline-flex items-center gap-1.5 text-xs font-black text-masala-primary bg-white px-3 py-1.5 rounded-full border border-masala-border">
           <Zap className="h-3 w-3" /> {elapsedSecs}s elapsed
         </span>
       </div>
-      <div className="w-full max-w-md space-y-3">
+      <div className="w-full max-w-md space-y-3 px-4">
         <div className="relative w-full h-2 bg-masala-border/30 rounded-full overflow-hidden">
           <div className="h-full bg-gradient-to-r from-masala-primary to-masala-accent rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
         </div>
@@ -380,7 +369,7 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
           })}
         </div>
       </div>
-      <button onClick={onRetry} className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[44px] flex items-center gap-2">
+      <button onClick={onRetry} className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill shadow-sm transition-all min-h-[44px] flex items-center gap-2">
         Check now →
       </button>
     </div>
@@ -389,7 +378,7 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
 
 function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in">
+    <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in px-4">
       <span className="text-6xl">🛒</span>
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>Not Found in Stores</h2>
@@ -398,10 +387,10 @@ function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void 
         </p>
       </div>
       <div className="flex gap-3 flex-wrap justify-center">
-        <button onClick={onRefresh} className="px-6 py-3 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary transition-all flex items-center gap-2 min-h-[44px]">
+        <button onClick={onRefresh} className="px-8 py-3.5 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary shadow-lg shadow-masala-primary/20 transition-all flex items-center gap-2 min-h-[48px]">
           <RefreshCw className="h-4 w-4" /> Try Again
         </button>
-        <a href="/" className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-muted transition-all min-h-[44px] flex items-center">
+        <a href="/" className="px-8 py-3.5 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[48px] flex items-center">
           Browse Categories
         </a>
       </div>
@@ -412,9 +401,9 @@ function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void 
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen py-10 px-4">
+      <div className="min-h-screen py-10 px-4 bg-masala-bg">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
           </div>
         </div>

@@ -44,14 +44,12 @@ export default function ProductCard({
   const inStock = listing.availability === 'IN_STOCK' || listing.availability === 'UNKNOWN';
   const store   = getStoreConfig(listing.store_name ?? '');
 
-  // FIX 4: only show price/kg when the product is sold by weight and value is distinct
   const showPricePerKg =
     listing.price_per_kg &&
     listing.price_per_kg !== listing.price &&
     (listing.weight_label?.toLowerCase().includes('kg') ||
       listing.weight_label?.toLowerCase().includes('g'));
 
-  // Build tracked redirect URL (FIX from Prompt B)
   const redirectUrl = buildRedirectUrl({
     productId:   listing.id,
     storeSlug:   listing.store_name?.toLowerCase().replace(/\s+/g, '') ?? '',
@@ -60,138 +58,110 @@ export default function ProductCard({
   });
 
   return (
-    <div className="listing-card bg-white rounded-2xl overflow-hidden border border-masala-border hover:shadow-lg transition-all duration-300 flex flex-col group">
-
-      {/* ── Image area ─────────────────────────────────────────────────── */}
-      <div className="relative aspect-square bg-masala-muted flex items-center justify-center p-4 overflow-hidden">
+    <div className="bg-white rounded-2xl overflow-hidden border border-masala-border hover:shadow-md transition-all duration-300 flex flex-col group">
+      {/* Image area */}
+      <div className="relative aspect-square bg-masala-muted/30 flex items-center justify-center p-3 sm:p-4 overflow-hidden">
         {listing.image_url ? (
           <img
             src={listing.image_url}
             alt={listing.product_name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         ) : (
-          <span className="text-5xl group-hover:scale-110 transition-transform duration-300">🛒</span>
+          <span className="text-4xl sm:text-5xl group-hover:scale-110 transition-transform duration-500">🛒</span>
         )}
 
-        {/* FIX 2: Store + status badges aligned in a single row */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-          {/* Store pill */}
           <span
-            className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm border"
-            style={{
-              background: store.color,
-              color: store.textColor,
-              borderColor: store.textColor + '30',
-            }}
+            className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm border"
+            style={{ background: store.color, color: store.textColor, borderColor: store.textColor + '30' }}
           >
             {store.initials}
           </span>
 
-          {/* Status pill */}
           {isBestPrice ? (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700">
+            <span className="px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 shadow-sm">
               Best Price
             </span>
           ) : inStock ? (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-50 text-blue-700">
+            <span className="px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase bg-blue-50 text-blue-700">
               In Stock
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-500">
+            <span className="px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase bg-gray-100 text-gray-500">
               Out of Stock
             </span>
           )}
         </div>
 
-        {/* Rank badge */}
         {listing.rank && listing.rank <= 3 && (
-          <div className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-masala-primary text-white text-[11px] font-black flex items-center justify-center">
+          <div className="absolute bottom-2 left-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-masala-primary text-white text-[10px] sm:text-[11px] font-black flex items-center justify-center shadow-lg">
             {listing.rank}
           </div>
         )}
       </div>
 
-      {/* ── Info area ───────────────────────────────────────────────────── */}
-      <div className="p-3 flex flex-col gap-1.5 flex-1">
-        {/* Product name */}
-        <p className="text-[13px] font-semibold text-masala-text leading-tight line-clamp-2 min-h-[2.5rem]">
+      {/* Info area */}
+      <div className="p-2.5 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
+        <p className="text-[12px] sm:text-[13px] font-bold text-masala-text leading-tight line-clamp-2 min-h-[2.4rem] sm:min-h-[2.5rem]">
           {listing.product_name}
         </p>
 
-        {/* Weight */}
         {listing.weight_label && (
-          <p className="text-[11px] text-masala-text-muted">{listing.weight_label}</p>
+          <p className="text-[10px] sm:text-[11px] text-masala-text-muted font-medium">{listing.weight_label}</p>
         )}
 
-        {/* Price row */}
-        <div className="flex items-baseline gap-2 mt-auto">
-          <span
-            className="text-[22px] font-bold text-masala-primary leading-none"
-            style={{ fontFamily: 'Fraunces, serif' }}
-          >
+        <div className="flex items-baseline gap-1.5 mt-auto">
+          <span className="text-[20px] sm:text-[22px] font-black text-masala-primary leading-none" style={{ fontFamily: 'Fraunces, serif' }}>
             €{(listing.price ?? 0).toFixed(2)}
           </span>
-          {/* FIX 4: conditional price/kg */}
           {showPricePerKg && (
-            <span className="text-[11px] text-masala-text-muted">
+            <span className="text-[10px] sm:text-[11px] text-masala-text-muted">
               €{listing.price_per_kg!.toFixed(2)}/kg
             </span>
           )}
         </div>
 
-        {/* Freshness + stock */}
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[11px] text-masala-text-light">
-            <Clock className="h-3 w-3" />
+        <div className="flex items-center gap-2.5 mb-1">
+          <span className="flex items-center gap-1 text-[10px] text-masala-text-light">
+            <Clock className="h-2.5 w-2.5" />
             {timeAgo(listing.last_scraped_at)}
           </span>
-          <span className={`flex items-center gap-1 text-[11px] font-medium ${inStock ? 'text-emerald-600' : 'text-masala-text-light'}`}>
+          <span className={`flex items-center gap-1 text-[10px] font-bold ${inStock ? 'text-emerald-600' : 'text-masala-text-light'}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-            {inStock ? 'Available' : 'Unavailable'}
+            {inStock ? 'Live' : 'Out'}
           </span>
         </div>
 
-        {/* Buy Now — tracked redirect */}
-        <a
-          href={redirectUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full h-9 mt-1 bg-masala-primary text-white text-[12px] font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-masala-secondary active:scale-[0.97] transition-all"
-          onClick={() => {
-            // Optimistic local tracking
-            if (typeof window !== 'undefined') {
-              try {
-                const recent = JSON.parse(localStorage.getItem('bs-clicked') ?? '[]');
-                localStorage.setItem('bs-clicked', JSON.stringify(
-                  [{ id: listing.id, store: listing.store_name, ts: Date.now() }, ...recent].slice(0, 20)
-                ));
-              } catch { /* ignore */ }
-            }
-          }}
-        >
-          <ShoppingCart className="h-3.5 w-3.5" />
-          Buy Now
-        </a>
-
-        {/* FIX 3: Prominent Add to Compare button */}
-        {onCompareToggle && (
-          <button
-            onClick={onCompareToggle}
-            className={`w-full h-9 rounded-xl border-2 text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
-              isCompared
-                ? 'border-masala-primary text-masala-primary bg-masala-primary/5'
-                : 'border-masala-border text-masala-text hover:border-masala-primary hover:text-masala-primary'
-            }`}
+        <div className="space-y-1.5">
+          <a
+            href={redirectUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-8 sm:h-9 bg-masala-primary text-white text-[11px] sm:text-[12px] font-black rounded-lg sm:rounded-xl flex items-center justify-center gap-1.5 hover:bg-masala-secondary active:scale-[0.96] transition-all shadow-sm"
           >
-            {isCompared ? (
-              <><Check className="h-3.5 w-3.5" /> Added to Compare</>
-            ) : (
-              <><Plus className="h-3.5 w-3.5" /> Add to Compare</>
-            )}
-          </button>
-        )}
+            <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            BUY NOW
+          </a>
+
+          {onCompareToggle && (
+            <button
+              onClick={onCompareToggle}
+              className={`w-full h-8 sm:h-9 rounded-lg sm:rounded-xl border-2 text-[11px] sm:text-[12px] font-black flex items-center justify-center gap-1.5 transition-all active:scale-[0.96] ${
+                isCompared
+                  ? 'border-masala-primary text-masala-primary bg-masala-primary/5'
+                  : 'border-masala-border text-masala-text hover:border-masala-primary hover:text-masala-primary'
+              }`}
+            >
+              {isCompared ? (
+                <><Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> ADDED</>
+              ) : (
+                <><Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> COMPARE</>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -139,7 +139,7 @@ export default function LandingPage() {
           >
             Shop by Category
           </h2>
-          {/* Desktop: 5-col grid. Mobile: horizontal scroll */}
+          {/* Desktop: 5-col grid */}
           <div className="hidden sm:grid grid-cols-5 gap-4">
             {CATEGORIES.map((cat) => (
               <div key={cat.name} className="flex justify-center">
@@ -147,8 +147,8 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          {/* Mobile: 2-col grid */}
-          <div className="sm:hidden grid grid-cols-4 gap-2">
+          {/* Mobile: 3-col grid (Optimized) */}
+          <div className="sm:hidden grid grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => (
               <div key={cat.name} className="flex justify-center">
                 <CategoryTile emoji={cat.emoji} name={cat.name} query={cat.query} />

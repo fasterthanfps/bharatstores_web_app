@@ -14,13 +14,13 @@ export default function CategoryTile({ emoji, name, query }: CategoryTileProps) 
   return (
     <button
       onClick={() => router.push(`/search?q=${encodeURIComponent(query)}`)}
-      className="group flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-masala-border p-3 w-[120px] h-[120px] sm:w-[120px] sm:h-[120px] w-[96px] h-[96px] hover:scale-105 hover:shadow-md hover:border-masala-primary/40 transition-all duration-200 cursor-pointer"
+      className="group flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-masala-border p-2 sm:p-3 w-full aspect-square hover:scale-[1.03] hover:shadow-md hover:border-masala-primary/40 transition-all duration-200 cursor-pointer shadow-sm"
       aria-label={`Browse ${name}`}
     >
-      <span className="text-4xl sm:text-[40px] leading-none group-hover:scale-110 transition-transform duration-200">
+      <span className="text-3xl sm:text-4xl leading-none group-hover:scale-110 transition-transform duration-200">
         {emoji}
       </span>
-      <span className="text-[11px] sm:text-[13px] font-semibold text-masala-text text-center leading-tight">
+      <span className="text-[10px] sm:text-[13px] font-bold text-masala-text text-center leading-tight">
         {name}
       </span>
     </button>
