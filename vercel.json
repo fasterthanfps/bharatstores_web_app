@@ -5,11 +5,14 @@
         },
         "app/api/scraper/run/route.ts": {
             "maxDuration": 60
+        },
+        "app/api/cron/refresh-cache/route.ts": {
+            "maxDuration": 60
         }
     },
     "crons": [
         {
-            "path": "/api/scraper/run",
+            "path": "/api/cron/refresh-cache",
             "schedule": "0 */6 * * *"
         }
     ]

@@ -2,404 +2,425 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SearchBar from '@/components/search/SearchBar';
-import ComparisonGrid from '@/components/comparison/ComparisonGrid';
-import { Search, RefreshCw, Zap } from 'lucide-react';
+import SearchAutocomplete from '@/components/search/SearchAutocomplete';
+import ProductCard from '@/components/ui/ProductCard';
+import { ProductCardSkeleton } from '@/components/ui/ProductCardSkeleton';
+import CompareTray from '@/components/ui/CompareTray';
+import FilterSidebar from '@/components/ui/FilterSidebar';
+import { useSearchFilters } from '@/hooks/useSearchFilters';
+import { getStoreConfig } from '@/lib/stores';
+import { Search, RefreshCw, Zap, SlidersHorizontal, X } from 'lucide-react';
 
-const STORE_NAMES = [
-    'Dookan', 'Jamoona', 'Swadesh', 'Namma Markt',
-    'Angaadi', 'Little India', 'Spice Village', 'Grocera',
-];
+const SORT_TABS = [
+  { id: 'best', label: 'BEST' },
+  { id: 'price', label: 'PRICE' },
+  { id: 'pricePerKg', label: '€/KG' },
+  { id: 'stock', label: 'STOCK' },
+] as const;
+
+const STORE_NAMES_DISPLAY = ['Dookan', 'Jamoona', 'Swadesh', 'Namma Markt', 'Angaadi', 'Little India', 'Spice Village', 'Grocera'];
 
 function SearchPageContent() {
-    const searchParams = useSearchParams();
-    const query = searchParams.get('q') ?? '';
-    const sort = searchParams.get('sort') ?? 'price';
+  const searchParams = useSearchParams();
+  const { filters, setFilters, clearFilters, hasActiveFilters, activeFilterCount } = useSearchFilters();
+  const displayQuery = filters.q.trim();
 
-    const [results, setResults] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [fresh, setFresh] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [pollCount, setPollCount] = useState(0);
-    const [exactCount, setExactCount] = useState(0);
-    const [relatedCount, setRelatedCount] = useState(0);
-    const [elapsedSecs, setElapsedSecs] = useState(0);
-    const refreshingRef = useRef(false);
-    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const searchStartRef = useRef<number>(Date.now());
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+  const [elapsedSecs, setElapsedSecs] = useState(0);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [compareItems, setCompareItems] = useState<any[]>([]);
 
-    const stopTimer = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    };
+  const refreshingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const searchStartRef = useRef<number>(Date.now());
 
-    const startTimer = () => {
-        stopTimer();
-        searchStartRef.current = Date.now();
-        setElapsedSecs(0);
-        timerRef.current = setInterval(() => {
-            setElapsedSecs(Math.floor((Date.now() - searchStartRef.current) / 1000));
-        }, 1000);
-    };
+  const stopTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+  const startTimer = () => {
+    stopTimer();
+    searchStartRef.current = Date.now();
+    setElapsedSecs(0);
+    timerRef.current = setInterval(() => setElapsedSecs(Math.floor((Date.now() - searchStartRef.current) / 1000)), 1000);
+  };
 
-    const fetchResults = useCallback(async (): Promise<boolean> => {
-        if (!query || query.length < 2) return false;
-        try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&sort=${sort}`);
-            const data = await res.json();
-            const listings = data.data?.listings || [];
-            const isFresh = data.data?.fresh !== false;
-            const isRefreshing = data.data?.refreshing === true;
+  const buildSearchUrl = useCallback(() => {
+    const p = new URLSearchParams();
+    if (filters.q) p.set('q', filters.q);
+    if (filters.sort && filters.sort !== 'best') p.set('sort', filters.sort);
+    if (filters.stores.length > 0) p.set('stores', filters.stores.join(','));
+    if (filters.maxPrice < 100) p.set('maxPrice', String(filters.maxPrice));
+    if (filters.minPrice > 0) p.set('minPrice', String(filters.minPrice));
+    if (filters.inStockOnly) p.set('inStock', 'true');
+    return `/api/search?${p.toString()}`;
+  }, [filters]);
 
-            setResults(listings);
-            setFresh(isFresh);
-            setExactCount(data.data?.exactCount ?? 0);
-            setRelatedCount(data.data?.relatedCount ?? 0);
-            setLoading(false);
+  const fetchResults = useCallback(async (): Promise<boolean> => {
+    if (!filters.q || filters.q.length < 2) return false;
+    try {
+      const res = await fetch(buildSearchUrl());
+      const data = await res.json();
+      const listings = data.data?.listings || [];
+      const isRefreshing = data.data?.refreshing === true;
 
-            if (listings.length > 0) stopTimer();
+      setResults(listings);
+      setLoading(false);
+      if (listings.length > 0) stopTimer();
 
-            if (isRefreshing && !refreshingRef.current) {
-                setRefreshing(true);
-                refreshingRef.current = true;
-            } else if (isFresh && !isRefreshing) {
-                setRefreshing(false);
-                refreshingRef.current = false;
-            }
+      if (isRefreshing && !refreshingRef.current) { setRefreshing(true); refreshingRef.current = true; }
+      else if (!isRefreshing) { setRefreshing(false); refreshingRef.current = false; }
 
-            return listings.length > 0;
-        } catch {
-            setLoading(false);
-            return false;
-        }
-    }, [query, sort]);
+      return listings.length > 0;
+    } catch { setLoading(false); return false; }
+  }, [buildSearchUrl, filters.q]);
 
-    // On query change: reset and fetch
-    useEffect(() => {
-        setLoading(true);
-        setResults([]);
-        setPollCount(0);
-        setRefreshing(false);
-        refreshingRef.current = false;
-        startTimer();
-        if (query.length >= 2) fetchResults();
-        else { setLoading(false); stopTimer(); }
-        return () => stopTimer();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [query]);
+  useEffect(() => {
+    setLoading(true);
+    setResults([]);
+    setPollCount(0);
+    setRefreshing(false);
+    refreshingRef.current = false;
+    startTimer();
+    if (filters.q.length >= 2) fetchResults();
+    else { setLoading(false); stopTimer(); }
+    return () => stopTimer();
+  }, [searchParams.toString()]);
 
-    // Poll while no results yet (cold cache — scraper is running)
-    // Poll every 4s for a max of 8 attempts (~32s total)
-    useEffect(() => {
-        if (results.length > 0 || pollCount >= 8 || query.length < 2) return;
-        const timer = setTimeout(async () => {
-            const found = await fetchResults();
-            if (!found) setPollCount(c => c + 1);
-        }, 4000);
-        return () => clearTimeout(timer);
-    }, [results, pollCount, fetchResults, query]);
+  useEffect(() => {
+    if (results.length > 0 || pollCount >= 8 || filters.q.length < 2) return;
+    if (loading) return;
+    const t = setTimeout(async () => { const found = await fetchResults(); if (!found) setPollCount(c => c + 1); }, 4000);
+    return () => clearTimeout(t);
+  }, [results, pollCount, fetchResults, filters.q, loading]);
 
-    // When a background refresh is in progress, poll every 6s to pick up fresh data
-    useEffect(() => {
-        if (!refreshing || !results.length) return;
-        const timer = setTimeout(async () => {
-            await fetchResults();
-        }, 6000);
-        return () => clearTimeout(timer);
-    }, [refreshing, results, fetchResults]);
+  useEffect(() => {
+    if (!refreshing || !results.length) return;
+    const t = setTimeout(() => fetchResults(), 6000);
+    return () => clearTimeout(t);
+  }, [refreshing, results, fetchResults]);
 
-    const isPolling = results.length === 0 && pollCount < 8 && !loading && query.length >= 2;
-    const isTimedOut = results.length === 0 && pollCount >= 8 && !loading;
+  const isPolling = results.length === 0 && pollCount < 8 && !loading && filters.q.length >= 2;
+  const isTimedOut = results.length === 0 && pollCount >= 8 && !loading;
 
-    // ↻ Manual hard refresh
-    const handleRefresh = useCallback(async () => {
-        setLoading(true);
-        setRefreshing(false);
-        refreshingRef.current = false;
-        startTimer();
-        try {
-            const res = await fetch(
-                `/api/search/refresh?q=${encodeURIComponent(query)}&sort=${sort}`,
-                { method: 'POST' }
-            );
-            const data = await res.json();
-            if (data.success) {
-                setResults(data.data?.listings || []);
-                setExactCount(data.data?.exactCount ?? 0);
-                setRelatedCount(data.data?.relatedCount ?? 0);
-                setFresh(true);
-            } else {
-                await fetchResults();
-            }
-        } catch {
-            await fetchResults();
-        } finally {
-            setLoading(false);
-            stopTimer();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [query, sort, fetchResults]);
+  const handleRefresh = useCallback(async () => {
+    setLoading(true);
+    setRefreshing(true);
+    refreshingRef.current = true;
+    startTimer();
+    try {
+      const res = await fetch(`/api/search/refresh?q=${encodeURIComponent(filters.q)}&sort=${filters.sort}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) { setResults(data.data?.listings || []); setLoading(false); }
+      else await fetchResults();
+    } catch { await fetchResults(); }
+    finally { stopTimer(); setRefreshing(false); refreshingRef.current = false; }
+  }, [filters.q, filters.sort, fetchResults]);
 
-    return (
-        <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mx-auto max-w-4xl">
-                <div className="mb-10">
-                    <SearchBar initialQuery={query} size="header" />
-                </div>
+  const handleCompareToggle = (listing: any) => {
+    setCompareItems(prev => {
+      const exists = prev.find(i => i.id === listing.id);
+      if (exists) return prev.filter(i => i.id !== listing.id);
+      if (prev.length >= 3) return prev;
+      return [...prev, listing];
+    });
+  };
 
-                {!query && (
-                    <div className="text-center py-20 text-masala-text/40 font-medium">
-                        Bitte gib einen Suchbegriff ein.
-                    </div>
-                )}
+  const exactResults = results.filter((l: any) => (l._score ?? 0) >= 80);
+  const relatedResults = results.filter((l: any) => (l._score ?? 0) < 80 && (l._score ?? 0) > 0);
+  const totalCount = results.length;
 
-                {/* Initial loading skeleton */}
-                {query && loading && results.length === 0 && <LoadingSkeleton />}
-
-                {/* Live scraping progress */}
-                {query && isPolling && <ScrapingProgress query={query} pollCount={pollCount} elapsedSecs={elapsedSecs} onRetry={fetchResults} />}
-
-                {/* Timed out — no results */}
-                {query && isTimedOut && (
-                    <NoResults query={query} onRefresh={handleRefresh} />
-                )}
-
-                {/* Results found */}
-                {query && results.length > 0 && !loading && (
-                    <>
-                        {refreshing && (
-                            <div className="flex items-center gap-3 mb-6 px-5 py-3 rounded-2xl bg-masala-pill border border-masala-border text-masala-primary text-xs font-bold animate-fade-in w-fit shadow-sm">
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                Prices refreshing in background...
-                            </div>
-                        )}
-                        {/* Exact matches section */}
-                        {exactCount > 0 && (
-                            <div className="mb-2">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="h-5 w-1 rounded-full bg-masala-primary block" />
-                                    <h2 className="text-xs font-black uppercase tracking-widest text-masala-primary">
-                                        {exactCount} Exact {exactCount === 1 ? 'Match' : 'Matches'}
-                                    </h2>
-                                </div>
-                                <ComparisonGrid
-                                    listings={results.filter((l: any) => (l._score ?? 0) >= 80)}
-                                    query={query}
-                                    fresh={fresh}
-                                    onRefresh={handleRefresh}
-                                    isRefreshing={loading}
-                                />
-                            </div>
-                        )}
-
-                        {/* Related items section */}
-                        {relatedCount > 0 && (
-                            <div className="mt-8">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="h-5 w-1 rounded-full bg-masala-text/20 block" />
-                                    <h2 className="text-xs font-black uppercase tracking-widest text-masala-text/50">
-                                        {relatedCount} Related Products
-                                    </h2>
-                                    <span className="text-[10px] text-masala-text/40 font-medium ml-1">(similar or related items)</span>
-                                </div>
-                                <ComparisonGrid
-                                    listings={results.filter((l: any) => (l._score ?? 0) < 80 && (l._score ?? 0) > 0)}
-                                    query={query}
-                                    fresh={fresh}
-                                    onRefresh={handleRefresh}
-                                    isRefreshing={loading}
-                                />
-                            </div>
-                        )}
-
-                        {/* Fallback: no score metadata (old cache) */}
-                        {exactCount === 0 && relatedCount === 0 && (
-                            <ComparisonGrid
-                                listings={results}
-                                query={query}
-                                fresh={fresh}
-                                onRefresh={handleRefresh}
-                                isRefreshing={loading}
-                            />
-                        )}
-                    </>
-                )}
-            </div>
+  return (
+    <div className="min-h-screen pb-24">
+      {/* Sticky search bar */}
+      <div className="sticky top-0 z-40 bg-masala-bg/95 backdrop-blur-md border-b border-masala-border shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+          <SearchAutocomplete initialQuery={filters.q} size="header" />
         </div>
-    );
-}
+      </div>
 
-// ── Scraping Progress State ────────────────────────────────────────────────────
-function ScrapingProgress({
-    query,
-    pollCount,
-    elapsedSecs,
-    onRetry,
-}: {
-    query: string;
-    pollCount: number;
-    elapsedSecs: number;
-    onRetry: () => void;
-}) {
-    const progress = Math.min(Math.max(10, (pollCount / 8) * 85 + (elapsedSecs / 30) * 15), 90);
-
-    return (
-        <div className="flex flex-col items-center justify-center py-16 px-4 gap-8 animate-fade-in">
-            {/* Animated icon */}
-            <div className="relative">
-                <div className="absolute inset-0 bg-masala-primary/10 blur-3xl rounded-full scale-150" />
-                <div className="relative w-24 h-24 rounded-[2rem] bg-white border border-masala-border shadow-sm flex items-center justify-center">
-                    <div className="relative">
-                        <Search className="h-10 w-10 text-masala-primary" />
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-masala-primary opacity-75" />
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-masala-primary" />
-                        </span>
-                    </div>
-                </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* Results header */}
+        {displayQuery && !loading && (
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              {exactResults.length > 0 && (
+                <span className="px-3 py-1 bg-masala-pill rounded-full text-[11px] font-black uppercase tracking-widest text-masala-primary border border-masala-border">
+                  {exactResults.length} Exact
+                </span>
+              )}
+              <h2 className="text-xl sm:text-2xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
+                {totalCount > 0 ? `${totalCount} results for ` : `No results for `}
+                <span className="text-masala-primary">&ldquo;{displayQuery}&rdquo;</span>
+              </h2>
+              
+              {/* REFRESH BUTTON (FIX) */}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-masala-border bg-white text-[11px] font-black uppercase tracking-widest hover:border-masala-primary hover:text-masala-primary transition-all active:scale-95 ${refreshing ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh Prices'}
+              </button>
             </div>
 
-            {/* Text */}
-            <div className="text-center space-y-3 max-w-sm">
-                <h2 className="text-2xl sm:text-3xl font-black font-serif text-masala-text">
-                    Searching for &ldquo;{query}&rdquo;
-                </h2>
-                <p className="text-masala-text/60 text-sm leading-relaxed">
-                    We&apos;re searching live across <strong className="text-masala-text font-bold">8 Indian grocery stores</strong> in Europe.
-                    Results appear as each store responds.
-                </p>
-                <div className="inline-flex items-center gap-2 text-xs font-black text-masala-primary bg-masala-pill px-4 py-2 rounded-full border border-masala-border">
-                    <Zap className="h-3.5 w-3.5" />
-                    {elapsedSecs}s elapsed
-                </div>
-            </div>
+            {/* Sort tabs + mobile filter button */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-white border border-masala-border rounded-xl p-1">
+                {SORT_TABS.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setFilters({ sort: tab.id })}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all ${
+                      filters.sort === tab.id
+                        ? 'bg-masala-primary text-white shadow-sm'
+                        : 'text-masala-text-muted hover:text-masala-text'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Progress bar */}
-            <div className="w-full max-w-md space-y-5">
-                <div className="relative w-full h-2.5 bg-masala-border/30 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gradient-to-r from-masala-primary to-masala-secondary rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: `${progress}%` }}
-                    />
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-                </div>
-
-                {/* Store status indicators */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
-                    {STORE_NAMES.map((store, i) => {
-                        const isDone = elapsedSecs > (i + 1) * 5;
-                        const isActive = !isDone && elapsedSecs > i * 4;
-                        return (
-                            <div
-                                key={store}
-                                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${isDone
-                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                    : isActive
-                                        ? 'bg-masala-pill border-masala-primary/30 text-masala-primary'
-                                        : 'bg-white border-masala-border text-masala-text/30'
-                                    }`}
-                            >
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isDone
-                                    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
-                                    : isActive
-                                        ? 'bg-masala-primary animate-pulse'
-                                        : 'bg-masala-border'
-                                    }`} />
-                                {store}
-                            </div>
-                        );
-                    })}
-                </div>
+              <button
+                onClick={() => setFilterOpen(true)}
+                className="lg:hidden relative flex items-center gap-1.5 px-3 py-2 bg-white border border-masala-border rounded-xl text-[12px] font-semibold text-masala-text hover:border-masala-primary/40 transition-colors min-h-[44px]"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
+          </div>
+        )}
 
-            <button
-                onClick={onRetry}
-                className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill hover:border-masala-primary/30 transition-all shadow-sm flex items-center gap-2 group"
-            >
-                Check now
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-        </div>
-    );
-}
-
-// ── No Results (timed out) ────────────────────────────────────────────────────
-function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void }) {
-    return (
-        <div className="flex flex-col items-center justify-center py-24 px-4 gap-6 animate-fade-in">
-            <div className="relative">
-                <div className="absolute inset-0 bg-masala-primary/10 blur-3xl rounded-full" />
-                <div className="relative w-24 h-24 rounded-[2rem] bg-white border border-masala-border flex items-center justify-center text-5xl shadow-sm rotate-3 hover:rotate-0 transition-transform duration-500">
-                    🛒
-                </div>
-            </div>
-            <div className="text-center space-y-3">
-                <h2 className="text-3xl font-black font-serif text-masala-text">Not Found in Stores</h2>
-                <p className="text-masala-text/60 text-sm max-w-sm mx-auto leading-relaxed">
-                    No products found for <span className="text-masala-primary font-bold">&quot;{query}&quot;</span> across our partner stores.<br />
-                    This product may not be stocked or try a different search term.
-                </p>
-            </div>
-            <div className="flex gap-3 flex-wrap justify-center">
+        {/* Active filter chips */}
+        {hasActiveFilters && displayQuery && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {filters.stores.map(storeId => {
+              const config = getStoreConfig(storeId);
+              return (
                 <button
-                    onClick={onRefresh}
-                    className="px-6 py-3 rounded-2xl bg-masala-primary text-white text-sm font-black uppercase tracking-widest hover:bg-masala-secondary transition-all shadow-md flex items-center gap-2"
+                  key={storeId}
+                  onClick={() => setFilters({ stores: filters.stores.filter(s => s !== storeId) })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all hover:opacity-80"
+                  style={{ background: config.color, color: config.textColor, borderColor: config.textColor + '30' }}
                 >
-                    <RefreshCw className="h-4 w-4" />
-                    Try Again
+                  {config.label}
+                  <X className="h-3 w-3" />
                 </button>
-                <a
-                    href="/"
-                    className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all shadow-sm"
-                >
-                    Browse Categories
-                </a>
-            </div>
+              );
+            })}
+            {filters.inStockOnly && (
+              <button
+                onClick={() => setFilters({ inStockOnly: false })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-success-bg text-masala-success text-xs font-bold border border-masala-success/20 hover:opacity-80 transition-all"
+              >
+                In Stock Only <X className="h-3 w-3" />
+              </button>
+            )}
+            {filters.maxPrice < 100 && (
+              <button
+                onClick={() => setFilters({ maxPrice: 100 })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
+              >
+                Max €{filters.maxPrice} <X className="h-3 w-3" />
+              </button>
+            )}
+            <button
+              onClick={clearFilters}
+              className="text-xs text-masala-text-muted hover:text-masala-primary underline ml-1 transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
+        {/* Main layout */}
+        <div className="flex gap-6">
+          <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} />
+
+          <div className="flex-1 min-w-0">
+            {/* Loading skeletons */}
+            {loading && filters.q && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
+              </div>
+            )}
+
+            {/* Polling progress */}
+            {isPolling && <ScrapingProgress query={displayQuery} pollCount={pollCount} elapsedSecs={elapsedSecs} onRetry={fetchResults} />}
+
+            {/* Timed out */}
+            {isTimedOut && <NoResults query={displayQuery} onRefresh={handleRefresh} />}
+
+            {/* Exact matches */}
+            {exactResults.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="h-5 w-1 rounded-full bg-masala-primary block" />
+                  <p className="text-xs font-black uppercase tracking-widest text-masala-primary">
+                    {exactResults.length} Exact {exactResults.length === 1 ? 'Match' : 'Matches'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {exactResults.map((listing: any, i: number) => (
+                    <ProductCard
+                      key={listing.id}
+                      listing={{ ...listing, rank: i + 1 }}
+                      searchQuery={displayQuery}
+                      position={i + 1}
+                      isBestPrice={i === 0}
+                      isCompared={compareItems.some(c => c.id === listing.id)}
+                      onCompareToggle={() => handleCompareToggle(listing)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Related */}
+            {relatedResults.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="h-5 w-1 rounded-full bg-masala-border block" />
+                  <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">
+                    {relatedResults.length} Related Products
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {relatedResults.map((listing: any, i: number) => (
+                    <ProductCard
+                      key={listing.id}
+                      listing={listing}
+                      searchQuery={displayQuery}
+                      position={exactResults.length + i + 1}
+                      isCompared={compareItems.some(c => c.id === listing.id)}
+                      onCompareToggle={() => handleCompareToggle(listing)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fallback */}
+            {exactResults.length === 0 && relatedResults.length === 0 && results.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {results.map((listing: any, i: number) => (
+                  <ProductCard
+                    key={listing.id}
+                    listing={{ ...listing, rank: i + 1 }}
+                    searchQuery={displayQuery}
+                    position={i + 1}
+                    isBestPrice={i === 0}
+                    isCompared={compareItems.some(c => c.id === listing.id)}
+                    onCompareToggle={() => handleCompareToggle(listing)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-    );
+      </div>
+
+      <CompareTray
+        items={compareItems}
+        onRemove={id => setCompareItems(prev => prev.filter(i => i.id !== id))}
+        onClear={() => setCompareItems([])}
+      />
+    </div>
+  );
 }
 
-// ── Loading Skeleton ──────────────────────────────────────────────────────────
-function LoadingSkeleton() {
-    return (
-        <div className="space-y-6 animate-fade-in">
-            {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-[2.5rem] border border-masala-border p-6 flex flex-col sm:flex-row gap-6 shadow-sm" style={{ opacity: 1 - (i - 1) * 0.2 }}>
-                    <div className="flex sm:flex-col items-center gap-4 sm:gap-5 flex-shrink-0">
-                        <div className="w-8 h-8 rounded-2xl bg-masala-pill animate-pulse" />
-                        <div className="w-28 h-28 rounded-3xl bg-masala-pill animate-pulse" />
-                    </div>
-                    <div className="flex-1 space-y-4">
-                        <div className="flex justify-between items-start gap-4">
-                            <div className="space-y-3 flex-1">
-                                <div className="h-3 w-20 bg-masala-pill rounded-full animate-pulse" />
-                                <div className="h-7 w-3/4 bg-masala-pill rounded-xl animate-pulse" />
-                                <div className="h-4 w-24 bg-masala-pill rounded-full animate-pulse" />
-                                <div className="flex gap-2 pt-1">
-                                    <div className="h-6 w-20 bg-masala-pill rounded-full animate-pulse" />
-                                    <div className="h-6 w-16 bg-masala-pill rounded-full animate-pulse" />
-                                </div>
-                            </div>
-                            <div className="h-24 w-32 bg-masala-pill rounded-3xl animate-pulse" />
-                        </div>
-                        <div className="flex gap-3 pt-4 border-t border-masala-border/50">
-                            <div className="h-12 flex-1 bg-masala-pill rounded-2xl animate-pulse" />
-                            <div className="h-12 w-32 bg-masala-pill rounded-2xl animate-pulse" />
-                        </div>
-                    </div>
-                </div>
-            ))}
+function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
+  query: string; pollCount: number; elapsedSecs: number; onRetry: () => void;
+}) {
+  const progress = Math.min(Math.max(10, (pollCount / 8) * 85 + (elapsedSecs / 30) * 15), 90);
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-8 animate-fade-in">
+      <div className="relative w-20 h-20 rounded-[1.5rem] bg-white border border-masala-border shadow-sm flex items-center justify-center">
+        <Search className="h-9 w-9 text-masala-primary" />
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-masala-primary opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-masala-primary" />
+        </span>
+      </div>
+      <div className="text-center space-y-2 max-w-sm">
+        <h2 className="text-2xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
+          Searching for &ldquo;{query}&rdquo;
+        </h2>
+        <p className="text-masala-text-muted text-sm">Checking live prices across 8 Indian grocery stores…</p>
+        <span className="inline-flex items-center gap-1.5 text-xs font-black text-masala-primary bg-masala-pill px-3 py-1.5 rounded-full border border-masala-border">
+          <Zap className="h-3 w-3" /> {elapsedSecs}s elapsed
+        </span>
+      </div>
+      <div className="w-full max-w-md space-y-3">
+        <div className="relative w-full h-2 bg-masala-border/30 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-masala-primary to-masala-accent rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
         </div>
-    );
+        <div className="grid grid-cols-4 gap-1.5">
+          {STORE_NAMES_DISPLAY.map((store, i) => {
+            const isDone = elapsedSecs > (i + 1) * 4;
+            const isActive = !isDone && elapsedSecs > i * 3;
+            return (
+              <div key={store} className={`px-2 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${
+                isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                  : isActive ? 'bg-masala-pill border-masala-primary/30 text-masala-primary'
+                  : 'bg-white border-masala-border text-masala-text-light'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone ? 'bg-emerald-500' : isActive ? 'bg-masala-primary animate-pulse' : 'bg-masala-border'}`} />
+                {store.split(' ')[0]}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <button onClick={onRetry} className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[44px] flex items-center gap-2">
+        Check now →
+      </button>
+    </div>
+  );
+}
+
+function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in">
+      <span className="text-6xl">🛒</span>
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>Not Found in Stores</h2>
+        <p className="text-masala-text-muted text-sm max-w-sm">
+          No products for <span className="text-masala-primary font-bold">&quot;{query}&quot;</span>. Try a different search term.
+        </p>
+      </div>
+      <div className="flex gap-3 flex-wrap justify-center">
+        <button onClick={onRefresh} className="px-6 py-3 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary transition-all flex items-center gap-2 min-h-[44px]">
+          <RefreshCw className="h-4 w-4" /> Try Again
+        </button>
+        <a href="/" className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-muted transition-all min-h-[44px] flex items-center">
+          Browse Categories
+        </a>
+      </div>
+    </div>
+  );
 }
 
 export default function SearchPage() {
-    return (
-        <Suspense fallback={<LoadingSkeleton />}>
-            <SearchPageContent />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen py-10 px-4">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+            {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
+          </div>
+        </div>
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
+  );
 }

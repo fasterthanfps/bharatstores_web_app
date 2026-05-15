@@ -1,21 +1,57 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
+/* ── Design Tokens ──────────────────────────────────────────────────────────── */
 @theme {
-  --color-masala-bg: #fdf6ec;
-  --color-masala-text: #2c1810;
-  --color-masala-primary: #c0392b;
-  --color-masala-secondary: #922b21;
-  --color-masala-dark: #641e16;
-  --color-masala-border: #f0e0cc;
-  --color-masala-border-hover: #e8d5bf;
-  --color-masala-card: #ffffff;
-  --color-masala-pill: #fdf0e6;
-  --color-masala-pill-border: #f5dfc8;
-  
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: var(--font-playfair), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  /* Colors */
+  --color-masala-primary:    #8B2020;
+  --color-masala-secondary:  #6B1818;
+  --color-masala-accent:     #C84B31;
+  --color-masala-bg:         #FAF7F2;
+  --color-masala-surface:    #FFFFFF;
+  --color-masala-muted:      #F4EFE8;
+  --color-masala-border:     #E8E0D4;
+  --color-masala-pill:       #F0EAE0;
+  --color-masala-text:       #1C1410;
+  --color-masala-text-muted: #6B5E52;
+  --color-masala-text-light: #9C8E84;
+  --color-masala-success:    #1A7A4A;
+  --color-masala-success-bg: #E8F5EE;
+  /* Legacy aliases kept for compatibility */
+  --color-masala-dark:       #6B1818;
+  --color-masala-pill-border:#E8E0D4;
+  --color-masala-card:       #FFFFFF;
+
+  /* Fonts */
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans:    var(--font-dm-sans, 'DM Sans'), ui-sans-serif, system-ui, sans-serif;
+  --font-serif:   var(--font-dm-sans, 'DM Sans'), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+
+  /* Spacing extras */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+  --spacing-26: 6.5rem;
+
+  /* Animations */
+  --animate-fade-up: fadeUp 0.4s ease forwards;
 }
 
+/* ── CSS Variables for non-Tailwind components ───────────────────────────────── */
+:root {
+  --c-primary:  #8B2020;
+  --c-bg:       #FAF7F2;
+  --c-surface:  #FFFFFF;
+  --c-border:   #E8E0D4;
+  --c-text:     #1C1410;
+  --c-muted:    #6B5E52;
+  --radius-sm:  10px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
+}
+
+/* ── Base Reset ─────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -27,36 +63,60 @@ html {
 }
 
 body {
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   background-color: var(--color-masala-bg);
   color: var(--color-masala-text);
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(var(--color-masala-border) 1px, transparent 1px);
+  background-image: radial-gradient(circle, #D4C5B0 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* Typography Enhancements */
-h1, h2, h3, h4, h5, h6, .font-serif {
-  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+h1, h2 {
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
 }
 
-/* Scrollbar */
+::selection {
+  background-color: rgba(139, 32, 32, 0.2);
+  color: #8B2020;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--color-masala-bg); }
-::-webkit-scrollbar-thumb { 
-  background: #e8d5bf; 
+::-webkit-scrollbar-thumb {
+  background: #E8E0D4;
   border-radius: 20px;
   border: 2px solid var(--color-masala-bg);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-masala-primary); }
 
-/* Premium Gradients */
+/* ── Mobile Utilities ───────────────────────────────────────────────────────── */
+.hide-mobile { display: none; }
+@media (min-width: 640px) { .hide-mobile { display: block; } }
+
+.show-mobile { display: block; }
+@media (min-width: 640px) { .show-mobile { display: none; } }
+
+.scroll-x-snap {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x-snap > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+.scroll-x-snap::-webkit-scrollbar { display: none; }
+
+/* ── Premium Gradients ──────────────────────────────────────────────────────── */
 .gradient-header {
-  background: linear-gradient(135deg, #c0392b 0%, #922b21 50%, #641e16 100%);
+  background: linear-gradient(135deg, #8B2020 0%, #6B1818 50%, #4A1010 100%);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #c0392b 0%, #922b21 100%);
+  background: linear-gradient(135deg, #8B2020 0%, #C84B31 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -64,15 +124,58 @@ h1, h2, h3, h4, h5, h6, .font-serif {
 }
 
 .glass-header {
-  background: rgba(253, 246, 236, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(240, 224, 204, 0.5);
+  background: rgba(250, 247, 242, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(232, 224, 212, 0.6);
 }
 
-/* ── Core Animations ───────────────────────────────────────────────────────── */
+/* ── Hero Glass ─────────────────────────────────────────────────────────────── */
+.hero-glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
 
-/* Fade + slide up — default entry */
+/* ── Listing Card ───────────────────────────────────────────────────────────── */
+.listing-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s ease;
+}
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px -8px rgba(139, 32, 32, 0.12), 0 4px 16px -4px rgba(0,0,0,0.06);
+  border-color: rgba(139, 32, 32, 0.2) !important;
+}
+.listing-card:active {
+  transform: translateY(-1px);
+  transition-duration: 0.1s;
+}
+
+.listing-cheapest {
+  border: 1.5px solid #82e0aa !important;
+  background: linear-gradient(135deg, #eafaf1 0%, #f0fdf4 100%) !important;
+}
+
+/* ── Interactive Elements ─────────────────────────────────────────────────── */
+a, button {
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────────── */
+
+/* Fade Up — new token */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeUp 0.4s ease forwards;
+}
+
+/* Fade In (slide up) */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -81,7 +184,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: fadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Staggered card entrance */
+/* Card Reveal */
 @keyframes cardReveal {
   from { opacity: 0; transform: translateY(20px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -100,7 +203,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
 .animate-card:nth-child(9)  { animation-delay: 480ms; }
 .animate-card:nth-child(10) { animation-delay: 540ms; }
 
-/* Price pop — number springs into view */
+/* Price Pop */
 @keyframes pricePop {
   0%   { opacity: 0; transform: scale(0.6) translateY(6px); }
   70%  { transform: scale(1.08) translateY(-2px); }
@@ -110,16 +213,16 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: pricePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Badge glow pulse for "Exact Match" label */
+/* Glow Pulse */
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); }
-  50%       { box-shadow: 0 0 12px 4px rgba(192, 57, 43, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 32, 32, 0); }
+  50%       { box-shadow: 0 0 12px 4px rgba(139, 32, 32, 0.2); }
 }
 .animate-glow-pulse {
   animation: glowPulse 2.5s ease-in-out infinite;
 }
 
-/* Shimmer sweep on skeleton & cards */
+/* Shimmer */
 @keyframes shimmer {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -128,7 +231,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: shimmer 2s infinite;
 }
 
-/* Float — search icon, empty state */
+/* Float */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-7px); }
@@ -137,7 +240,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: float 2.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-/* Slide in from bottom */
+/* Slide In From Bottom */
 @keyframes slideInFromBottom {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -146,7 +249,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: slideInFromBottom 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Rank badge spin-in */
+/* Rank Spin */
 @keyframes rankSpin {
   from { opacity: 0; transform: rotate(-30deg) scale(0.5); }
   to   { opacity: 1; transform: rotate(0deg) scale(1); }
@@ -155,7 +258,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: rankSpin 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Soft scale-up for modals / cards */
+/* Scale In */
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: scale(1); }
@@ -164,7 +267,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Spinner for loading */
+/* Spin */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -172,7 +275,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: spin 0.9s linear infinite;
 }
 
-/* Ping pulse for status dots */
+/* Ping */
 @keyframes ping {
   75%, 100% { transform: scale(2); opacity: 0; }
 }
@@ -180,7 +283,16 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Heartbeat — for cheapest price badge */
+/* Pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Heartbeat */
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
   14%       { transform: scale(1.15); }
@@ -192,7 +304,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: heartbeat 1.8s ease-in-out infinite;
 }
 
-/* Float Soft — for Best Price badge */
+/* Float Badge */
 @keyframes floatBadge {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50%       { transform: translateY(-3px) rotate(1deg); }
@@ -201,56 +313,7 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   animation: floatBadge 3s ease-in-out infinite;
 }
 
-/* Subtle background shimmer on card hover */
-@keyframes cardShimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-/* ── Interactive Elements ─────────────────────────────────────────────────── */
-
-a, button {
-  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Listing card hover — lift + sharper shadow */
-.listing-card {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.3s ease;
-}
-.listing-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 48px -8px rgba(192, 57, 43, 0.12), 0 4px 16px -4px rgba(0,0,0,0.06);
-  border-color: rgba(192, 57, 43, 0.2) !important;
-}
-.listing-card:active {
-  transform: translateY(-1px);
-  transition-duration: 0.1s;
-}
-
-/* Cheapest listing highlight */
-.listing-cheapest {
-  border: 1.5px solid #82e0aa !important;
-  background: linear-gradient(135deg, #eafaf1 0%, #f0fdf4 100%) !important;
-}
-
-/* ── Typography for mobile ──────────────────────────────────────────────────*/
-@media (max-width: 640px) {
-  h1 { font-size: 2.25rem !important; line-height: 1.2 !important; }
-  h2 { font-size: 1.5rem !important; }
-}
-
-/* ── Search bar focus ring animation ────────────────────────────────────── */
-@keyframes focusRing {
-  from { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4); }
-  to   { box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.12); }
-}
-input:focus {
-  animation: focusRing 0.2s ease forwards;
-}
-
-/* ── Section divider slide-in ───────────────────────────────────────────── */
+/* Divider Expand */
 @keyframes dividerExpand {
   from { transform: scaleX(0); opacity: 0; }
   to   { transform: scaleX(1); opacity: 1; }
@@ -260,11 +323,60 @@ input:focus {
   animation: dividerExpand 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* ── Counter number roll ─────────────────────────────────────────────────── */
+/* Dropdown Slide Down */
+@keyframes slideDownAndFade {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-dropdown {
+  transform-origin: top;
+  animation: slideDownAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Count Up */
 @keyframes countUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-count {
   animation: countUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Ticker Scroll */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  animation: ticker-scroll 35s linear infinite;
+  will-change: transform;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Slide Up (Compare tray / modals) */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Comparison modal backdrop */
+.comparison-modal-backdrop {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* ── Search Bar Focus Ring ───────────────────────────────────────────────────── */
+@keyframes focusRing {
+  from { box-shadow: 0 0 0 0 rgba(139, 32, 32, 0.4); }
+  to   { box-shadow: 0 0 0 4px rgba(139, 32, 32, 0.12); }
+}
+input:focus {
+  animation: focusRing 0.2s ease forwards;
+}
+
+/* ── Mobile Typography ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  h1 { font-size: 2.25rem !important; line-height: 1.2 !important; }
+  h2 { font-size: 1.5rem !important; }
 }
