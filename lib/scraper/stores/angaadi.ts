@@ -137,7 +137,13 @@ export class AngaadiScraper extends BaseScraper {
                 if (!priceMatch) return;
                 const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
 
-                const href = $el.find('a.woocommerce-LoopProduct-link, a').first().attr('href') || '';
+                // Prioritize the direct product link. Avoid category links.
+                let href = $el.find('a.woocommerce-LoopProduct-link, a.woocommerce-loop-product__link').first().attr('href');
+                if (!href || href.includes('/product-category/')) {
+                    href = $el.find('a[href*="/product/"]').first().attr('href') || '';
+                }
+                if (!href) href = $el.find('a').first().attr('href') || '';
+
                 const imgSrc = $el.find('img').first().attr('src') || $el.find('img').first().attr('data-src') || '';
 
                 const outOfStock = $el.find('[class*="out-of-stock"]').length > 0 || $el.text().toLowerCase().includes('out of stock');

@@ -261,12 +261,12 @@ export async function saveAndReturnListings(
 
     const STORE_DOMAIN_MAP: Record<string, string> = {
         grocera: 'grocera.de',
-        jamoona: 'jamoona.de',
-        littleindia: 'little-india.de',
+        jamoona: 'jamoona.com',
+        littleindia: 'littleindia.de',
         nammamarkt: 'nammamarkt.com',
-        dookan: 'dookan.com',
-        swadesh: 'swadesh.de',
-        angaadi: 'angaadi.de',
+        dookan: 'eu.dookan.com',
+        swadesh: 'swadesh.eu',
+        angaadi: 'angaadi-online.de',
         spicevillage: 'spicevillage.eu',
     };
 

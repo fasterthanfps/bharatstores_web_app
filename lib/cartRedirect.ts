@@ -3,11 +3,11 @@
 import { buildUTMUrl } from './utm';
 
 const STORE_BASE_URLS: Record<string, string> = {
-  dookan:       'https://www.dookan.com',
-  jamoona:      'https://www.jamoona.de',
-  swadesh:      'https://www.swadesh.de',
+  dookan:       'https://eu.dookan.com',
+  jamoona:      'https://www.jamoona.com',
+  swadesh:      'https://www.swadesh.eu',
   nammamarkt:   'https://www.nammamarkt.com',
-  angaadi:      'https://www.angaadi.de',
+  angaadi:      'https://angaadi-online.de',
   littleindia:  'https://www.little-india.de',
   spicevillage: 'https://www.spicevillage.eu',
   grocera:      'https://www.grocera.de',
@@ -87,8 +87,10 @@ export function buildCartUrl(storeSlug: string, items: CartItem[]): CartRedirect
   }
 
   // STRATEGY 4 (fallback): Search using PRODUCT NAME — NOT productId UUID
-  // Use productName which is human-readable
-  const searchQuery = encodeURIComponent(items[0].productName);
+  // Use productName which is human-readable. If productName looks like a UUID, use storeHandle if available.
+  const nameIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(items[0].productName);
+  const searchTerm = nameIsUuid ? (items[0].storeHandle || items[0].productName) : items[0].productName;
+  const searchQuery = encodeURIComponent(searchTerm);
   return {
     url: buildUTMUrl(`${baseUrl}/search?q=${searchQuery}`, utm),
     method: 'shopify_search',
