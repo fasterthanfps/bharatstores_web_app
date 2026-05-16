@@ -261,7 +261,7 @@ export async function saveAndReturnListings(
         jamoona: 'jamoona.de',
         littleindia: 'little-india.de',
         nammamarkt: 'nammamarkt.com',
-        dookan: 'dookan.de',
+        dookan: 'dookan.com',
         swadesh: 'swadesh.de',
         angaadi: 'angaadi.de',
         spicevillage: 'spicevillage.eu',

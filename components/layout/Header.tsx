@@ -85,10 +85,12 @@ export default function Header() {
           </div>
 
 
-          {/* Desktop search - FIXED: expanded for central prominence */}
-          <div className="hidden md:block flex-1 max-w-3xl mx-8 lg:mx-16">
-            <SearchAutocomplete size="header" />
-          </div>
+          {/* Desktop search - Hide on homepage to avoid duplication with Hero search */}
+          {!isHome && (
+            <div className="hidden md:block flex-1 max-w-3xl mx-8 lg:mx-16">
+              <SearchAutocomplete size="header" />
+            </div>
+          )}
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-2">
@@ -135,63 +137,67 @@ export default function Header() {
         </div>
 
         {/* ── Mobile: Full-width search bar ── */}
-        <div className="md:hidden px-4 pt-2.5 pb-1.5 border-b border-masala-border/60">
-          {/* On homepage: tapping opens search page. On search: live input. */}
-          {isSearch ? (
-            <form onSubmit={handleMobileSearch} className="relative flex items-center">
-              <Search
-                className="absolute left-3.5 text-masala-text-muted pointer-events-none"
-                style={{ width: '18px', height: '18px' }}
-              />
-              <input
-                ref={mobileInputRef}
-                type="search"
-                inputMode="search"
-                enterKeyHint="search"
-                value={mobileSearchQuery}
-                onChange={e => setMobileSearchQuery(e.target.value)}
-                placeholder="Search Indian groceries…"
-                className="w-full h-11 pl-10 pr-4 rounded-2xl bg-masala-muted/50 border border-masala-border text-[14px] text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
-              />
-            </form>
-          ) : (
-            // On homepage: tap target that goes to /search
-            <Link
-              href="/search"
-              className="flex items-center gap-2.5 h-11 px-4 rounded-2xl bg-masala-muted/50 border border-masala-border text-[14px] text-masala-text-muted hover:border-masala-primary transition-all w-full"
-            >
-              <Search style={{ width: '18px', height: '18px', flexShrink: 0 }} />
-              <span>Search Indian groceries…</span>
-            </Link>
-          )}
-        </div>
+        {!isHome && (
+          <div className="md:hidden px-4 pt-2.5 pb-1.5 border-b border-masala-border/60">
+            {/* On homepage: tapping opens search page. On search: live input. */}
+            {isSearch ? (
+              <form onSubmit={handleMobileSearch} className="relative flex items-center">
+                <Search
+                  className="absolute left-3.5 text-masala-text-muted pointer-events-none"
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <input
+                  ref={mobileInputRef}
+                  type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  value={mobileSearchQuery}
+                  onChange={e => setMobileSearchQuery(e.target.value)}
+                  placeholder="Search Indian groceries…"
+                  className="w-full h-11 pl-10 pr-4 rounded-2xl bg-masala-muted/50 border border-masala-border text-[14px] text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
+                />
+              </form>
+            ) : (
+              // On homepage: tap target that goes to /search
+              <Link
+                href="/search"
+                className="flex items-center gap-2.5 h-11 px-4 rounded-2xl bg-masala-muted/50 border border-masala-border text-[14px] text-masala-text-muted hover:border-masala-primary transition-all w-full"
+              >
+                <Search style={{ width: '18px', height: '18px', flexShrink: 0 }} />
+                <span>Search Indian groceries…</span>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* ── Mobile: Category pill strip ── */}
-        <div className="md:hidden flex items-center overflow-x-auto scrollbar-hide px-3 py-2 gap-0">
-          {CATEGORIES.map(cat => {
-            const isActive = cat.slug === activeCategorySlug;
-            const href = cat.slug === 'deals'
-              ? '/deals'
-              : cat.query
-              ? `/search?q=${encodeURIComponent(cat.query)}`
-              : isSearch ? '#' : '/search';
+        {!isHome && (
+          <div className="md:hidden flex items-center overflow-x-auto scrollbar-hide px-3 py-2 gap-0">
+            {CATEGORIES.map(cat => {
+              const isActive = cat.slug === activeCategorySlug;
+              const href = cat.slug === 'deals'
+                ? '/deals'
+                : cat.query
+                ? `/search?q=${encodeURIComponent(cat.query)}`
+                : isSearch ? '#' : '/search';
 
-            return (
-              <Link
-                key={cat.slug}
-                href={href}
-                onClick={cat.slug === '' && isSearch ? (e) => { e.preventDefault(); router.push('/search'); } : undefined}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold mr-2 transition-all active:scale-95 whitespace-nowrap ${
-                  isActive
-                    ? 'bg-masala-primary text-white shadow-sm'
-                    : 'bg-masala-muted/50 text-masala-text-muted hover:bg-masala-muted hover:text-masala-text'
-                }`}
-              >
-                {cat.label}
-              </Link>
-            );
-          })}
-        </div>
+              return (
+                <Link
+                  key={cat.slug}
+                  href={href}
+                  onClick={cat.slug === '' && isSearch ? (e) => { e.preventDefault(); router.push('/search'); } : undefined}
+                  className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold mr-2 transition-all active:scale-95 whitespace-nowrap ${
+                    isActive
+                      ? 'bg-masala-primary text-white shadow-sm'
+                      : 'bg-masala-muted/50 text-masala-text-muted hover:bg-masala-muted hover:text-masala-text'
+                  }`}
+                >
+                  {cat.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </header>
 
       {/* Smart Cart slide-in panel */}

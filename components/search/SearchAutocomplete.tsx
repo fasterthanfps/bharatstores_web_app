@@ -249,8 +249,8 @@ export default function SearchAutocomplete({
             {isFocused && (
                 <div 
                     ref={dropdownRef}
-                    className={`absolute top-full left-0 right-0 z-[100] bg-white border border-masala-border shadow-xl shadow-masala-primary/5 overflow-hidden animate-dropdown ${
-                        isHero ? 'mt-3 rounded-3xl' : 'mt-2 rounded-2xl'
+                    className={`absolute top-full left-0 right-0 z-[100] bg-white border border-masala-border shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden animate-dropdown ${
+                        isHero ? 'mt-4 rounded-[2rem]' : 'mt-2 rounded-2xl'
                     }`}
                 >
                     {/* Empty State: Popular Searches */}

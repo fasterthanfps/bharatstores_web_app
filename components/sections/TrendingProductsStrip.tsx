@@ -19,7 +19,7 @@ export default function TrendingProductsStrip({ products }: { products: Trending
               <p className="text-xs text-masala-text-muted font-bold uppercase tracking-wider mt-1.5">Biggest price drops today</p>
             </div>
           </div>
-          <a href="/search?discount=true" className="px-6 py-2.5 rounded-xl bg-white border border-masala-border text-sm font-black text-masala-text hover:border-masala-primary hover:text-masala-primary transition-all shadow-sm">
+          <a href="/deals" className="px-6 py-2.5 rounded-xl bg-white border border-masala-border text-sm font-black text-masala-text hover:border-masala-primary hover:text-masala-primary transition-all shadow-sm">
             View all deals →
           </a>
         </div>

@@ -3,7 +3,7 @@
 import { buildUTMUrl } from './utm';
 
 const STORE_BASE_URLS: Record<string, string> = {
-  dookan:       'https://www.dookan.de',
+  dookan:       'https://www.dookan.com',
   jamoona:      'https://www.jamoona.de',
   swadesh:      'https://www.swadesh.de',
   nammamarkt:   'https://www.nammamarkt.com',

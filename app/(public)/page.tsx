@@ -46,12 +46,12 @@ export default async function Home() {
             Save up to 40% on every grocery run.
           </p>
 
-          <div className="max-w-2xl mx-auto animate-slide-up">
+          <div className="relative z-10 max-w-2xl mx-auto animate-slide-up">
              <HeroSearch />
           </div>
 
           {/* Quick Stats */}
-          <div className="mt-16 flex flex-wrap justify-center items-center gap-8 sm:gap-12 opacity-60">
+          <div className="mt-32 flex flex-wrap justify-center items-center gap-8 sm:gap-12 opacity-60">
              <div className="flex flex-col items-center">
                 <span className="text-2xl font-black text-masala-text">8</span>
                 <span className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">Stores</span>
