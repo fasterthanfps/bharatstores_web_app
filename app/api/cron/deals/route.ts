@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       dealsToUpsert.push({
         listing_id: listing.id,
         product_id: listing.product_id,
-        product_name: listing.product_name,
+        product_name: listing.product_name ?? 'Unnamed Product',
         image_url: listing.image_url ?? '',
         category: listing.product_category ?? 'grocery',
         weight: listing.weight_label ?? '',
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     if (dealsToUpsert.length > 0) {
       const { error: upsertError } = await supabase
         .from('product_deals')
-        .upsert(dealsToUpsert, { onConflict: 'listing_id' });
+        .upsert(dealsToUpsert as any, { onConflict: 'listing_id' });
 
       if (upsertError) {
         console.error('Upsert error:', upsertError.message);

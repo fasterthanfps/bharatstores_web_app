@@ -18,10 +18,8 @@ export interface SearchResult {
 
 export interface ListingWithStore extends Tables<'listings'> {
     store_logo_url?: string | null;
-    product_name?: string | null;
     product_slug?: string | null;
-    product_category?: string | null;
-    search_terms?: string[];
+    search_terms?: string[] | null;
     _score?: number;
 }
 
