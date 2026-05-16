@@ -41,6 +41,9 @@ const POPULAR_SEARCHES = [
 interface AutocompleteSuggestion {
     name: string;
     category: string;
+    price?: number;
+    image?: string;
+    storeCount?: number;
 }
 
 interface SearchAutocompleteProps {
@@ -253,27 +256,18 @@ export default function SearchAutocomplete({
                         isHero ? 'mt-4 rounded-[2rem]' : 'mt-2 rounded-2xl'
                     }`}
                 >
-                    {/* Empty State: Popular Searches */}
+                    {/* Empty State: Prompt to search */}
                     {!query.trim() ? (
-                        <div className={isHero ? 'p-5' : 'p-4'}>
-                            <p className="flex items-center gap-1.5 text-[10px] text-masala-text/40 font-black uppercase tracking-[0.2em] px-1 mb-3">
-                                <TrendingUp className="h-3 w-3 text-masala-primary" />
-                                {t('popularSearches')}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {POPULAR_SEARCHES.map((term) => (
-                                    <button
-                                        key={term}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            handleSubmit(term);
-                                        }}
-                                        className="px-3 py-1.5 rounded-xl bg-masala-pill hover:bg-masala-primary hover:text-white text-xs font-semibold text-masala-text transition-all border border-masala-border hover:border-masala-primary"
-                                    >
-                                        {term}
-                                    </button>
-                                ))}
+                        <div className={isHero ? 'p-8 text-center' : 'p-4 text-center'}>
+                            <div className="mx-auto w-12 h-12 rounded-2xl bg-masala-primary/5 flex items-center justify-center mb-4">
+                                <Search className="h-6 w-6 text-masala-primary/20" />
                             </div>
+                            <p className="text-sm font-black text-masala-text">
+                                Type to find the best Indian prices
+                            </p>
+                            <p className="text-xs text-masala-text-muted mt-1">
+                                We compare 8 stores in real-time
+                            </p>
                         </div>
                     ) : (
                         /* Typing State: Autocomplete Suggestions */
@@ -294,21 +288,38 @@ export default function SearchAutocomplete({
                                                 e.preventDefault();
                                                 handleSubmit(suggestion.name);
                                             }}
-                                            className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
+                                            className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors border-b border-masala-border/30 last:border-0 ${
                                                 selectedIndex === idx ? 'bg-masala-pill/60' : 'hover:bg-masala-pill/40'
                                             }`}
                                         >
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                <Search className="h-3.5 w-3.5 text-masala-text/30 flex-shrink-0" />
-                                                <span className="text-sm text-masala-text truncate">
-                                                    <HighlightMatch text={suggestion.name} match={query.trim()} />
-                                                </span>
+                                            <div className="flex items-center gap-4 overflow-hidden">
+                                                {suggestion.image ? (
+                                                    <div className="h-10 w-10 rounded-lg bg-masala-bg border border-masala-border flex-shrink-0 overflow-hidden">
+                                                        <img src={suggestion.image} alt="" className="h-full w-full object-contain" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-lg bg-masala-bg border border-masala-border flex-shrink-0 flex items-center justify-center">
+                                                        <Search className="h-4 w-4 text-masala-text/20" />
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-black text-masala-text truncate">
+                                                        <HighlightMatch text={suggestion.name} match={query.trim()} />
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-masala-text-muted uppercase tracking-wider">
+                                                        {suggestion.category}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            {/* Category Tag */}
-                                            <div className="flex-shrink-0 ml-3">
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-masala-bg border border-masala-border text-[10px] font-medium text-masala-text/60 uppercase tracking-wider">
-                                                    <Tag className="h-2.5 w-2.5" />
-                                                    {suggestion.category}
+                                            
+                                            <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
+                                                {suggestion.price && (
+                                                    <span className="text-sm font-black text-masala-primary">
+                                                        €{suggestion.price.toFixed(2)}
+                                                    </span>
+                                                )}
+                                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                                    {suggestion.storeCount} Stores
                                                 </span>
                                             </div>
                                         </button>

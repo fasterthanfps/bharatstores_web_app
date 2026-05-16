@@ -8,6 +8,7 @@ import {
     shapeListings,
     saveAndReturnListings
 } from '@/lib/search/engine';
+import { smartTruncateQuery } from '@/lib/search/normalize';
 
 // ── Background scrape ─────────────────────────────────────────────────────────
 function triggerBackgroundScrape(query: string, sortCol: string) {
@@ -15,8 +16,10 @@ function triggerBackgroundScrape(query: string, sortCol: string) {
         try {
             const { ScraperOrchestrator } = await import('@/lib/scraper');
             const orchestrator = new ScraperOrchestrator();
+            const scrapeQuery = smartTruncateQuery(query);
+            console.log(`[Cache] Background scraping for: "${scrapeQuery}" (original: "${query}")`);
             const scraperResults: any = await Promise.race([
-                orchestrator.runAll(query),
+                orchestrator.runAll(scrapeQuery),
                 new Promise<null>((_, reject) =>
                     setTimeout(() => reject(new Error('Background scrape timeout')), 60000)
                 ),
@@ -45,7 +48,8 @@ export async function GET(req: NextRequest) {
     const sortCol = sort === 'price_per_kg' ? 'price_per_kg' : 'price';
     const freshCutoff = new Date(Date.now() - FRESH_TTL_MS).toISOString();
     const synonyms = SYNONYM_MAP[queryLower] ?? [];
-    const allTerms = [queryLower, ...synonyms];
+    const coreQuery = smartTruncateQuery(queryLower);
+    const allTerms = Array.from(new Set([queryLower, coreQuery, ...synonyms])).filter(t => t.length >= 2);
 
     const orClauses = allTerms
         .map(t => `name.ilike.%${t}%`)
@@ -96,9 +100,11 @@ export async function GET(req: NextRequest) {
     try {
         const { ScraperOrchestrator } = await import('@/lib/scraper');
         const orchestrator = new ScraperOrchestrator();
+        const scrapeQuery = smartTruncateQuery(query);
+        console.log(`[Search API] Live scraping for: "${scrapeQuery}" (original: "${query}")`);
 
         const scraperResults: any = await Promise.race([
-            orchestrator.runAll(query),
+            orchestrator.runAll(scrapeQuery),
             new Promise<null>((_, reject) =>
                 setTimeout(() => reject(new Error('Scraper timeout')), 35000)
             ),

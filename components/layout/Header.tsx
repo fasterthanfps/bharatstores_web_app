@@ -19,7 +19,6 @@ const CATEGORIES = [
   { label: 'Snacks',   slug: 'snacks',  query: 'chips' },
   { label: 'Dairy',    slug: 'dairy',   query: 'milk' },
   { label: 'Frozen',   slug: 'frozen',  query: 'frozen' },
-  { label: 'Deals',    slug: 'deals',   query: '' },
 ];
 
 export default function Header() {
@@ -77,7 +76,7 @@ export default function Header() {
       <header className="sticky top-0 z-50 bg-white shadow-sm">
 
         {/* ── Top bar: Logo + Search + Cart ── */}
-        <div className="flex items-center px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full">
+        <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full gap-4">
 
           {/* Logo */}
           <div className="flex-shrink-0">
@@ -86,10 +85,12 @@ export default function Header() {
 
 
           {/* Desktop search - Hide on homepage to avoid duplication with Hero search */}
-          {!isHome && (
+          {!isHome ? (
             <div className="hidden md:block flex-1 max-w-3xl mx-8 lg:mx-16">
               <SearchAutocomplete size="header" />
             </div>
+          ) : (
+            <div className="hidden md:block flex-1" />
           )}
 
           {/* Desktop nav */}
@@ -102,8 +103,13 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-masala-text hover:text-masala-primary hover:bg-masala-muted/40 transition-colors"
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                  pathname === link.href 
+                    ? 'bg-masala-primary text-white shadow-md shadow-masala-primary/20' 
+                    : 'text-masala-text hover:text-masala-primary hover:bg-masala-muted/30'
+                }`}
               >
+                {link.icon && <span>{link.icon}</span>}
                 {link.label}
               </Link>
             ))}

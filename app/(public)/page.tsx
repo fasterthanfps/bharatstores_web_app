@@ -1,12 +1,7 @@
 import type { Metadata } from 'next';
 import HeroSearch from '@/components/search/HeroSearch';
-import { getFeaturedProducts } from '@/lib/featured';
-import { getTrendingProducts } from '@/lib/trending';
-import TrendingProductsStrip from '@/components/sections/TrendingProductsStrip';
 import CategoryGrid from '@/components/sections/CategoryGrid';
 import HowItWorks from '@/components/sections/HowItWorks';
-import StoreTrustBar from '@/components/sections/StoreTrustBar';
-import CTABanner from '@/components/sections/CTABanner';
 
 export const metadata: Metadata = {
   title: 'BharatStores.eu – Indian Grocery Price Comparison in Germany & Europe',
@@ -16,16 +11,14 @@ export const metadata: Metadata = {
 export const revalidate = 3600; // Re-fetch data every hour
 
 export default async function Home() {
-  const trendingProducts = await getTrendingProducts();
-
   return (
     <main className="min-h-screen bg-masala-bg">
       {/* HERO SECTION - Search First */}
-      <section className="relative pt-20 pb-28 sm:pb-36 overflow-hidden bg-white border-b border-masala-border">
+      <section className="relative pt-24 pb-32 sm:pb-44 overflow-hidden bg-white">
         {/* Background elements */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[800px] bg-gradient-to-b from-masala-primary/5 to-transparent -z-10" />
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-masala-primary/5 blur-[150px] rounded-full -z-10" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-masala-accent/5 blur-[120px] rounded-full -z-10" />
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-masala-primary/5 blur-[150px] rounded-full -z-10" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-masala-accent/5 blur-[120px] rounded-full -z-10" />
 
         <div className="max-w-5xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-masala-primary/10 border border-masala-primary/20 mb-8 animate-fade-in">
@@ -70,21 +63,11 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* TRENDING DEALS */}
-      <TrendingProductsStrip products={trendingProducts} />
-
       {/* CATEGORIES */}
       <CategoryGrid />
 
       {/* HOW IT WORKS */}
       <HowItWorks />
-
-      {/* STORE TRUST BAR */}
-      <StoreTrustBar />
-
-      {/* CTA BANNER */}
-      <CTABanner />
-
     </main>
   );
 }

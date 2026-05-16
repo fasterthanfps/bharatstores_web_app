@@ -11,35 +11,34 @@ export async function GET(req: NextRequest) {
     const queryLower = query.toLowerCase();
 
     try {
-        // 1. Primary: Prefix match (starts with) - Limit 6
+        // 1. Primary: Prefix match (starts with) - Limit 5
         const { data: prefixMatches } = await supabase
             .from('products')
-            .select('name, category')
+            .select('name, category, price, image_url, store_count')
             .ilike('name', `${queryLower}%`)
-            .limit(6);
+            .limit(5);
 
-        // 2. Secondary: Substring match (contains) - Limit 4
-        // To fill out the dropdown if prefix matches are few
+        // 2. Secondary: Substring match (contains) - Limit 3
         let substringMatches: any[] = [];
         if ((prefixMatches?.length ?? 0) < 8) {
             const { data } = await supabase
                 .from('products')
-                .select('name, category')
+                .select('name, category, price, image_url, store_count')
                 .ilike('name', `%${queryLower}%`)
-                .not('name', 'ilike', `${queryLower}%`) // Exclude ones we already found
+                .not('name', 'ilike', `${queryLower}%`)
                 .limit(8 - (prefixMatches?.length ?? 0));
             substringMatches = data ?? [];
         }
 
         const combined = [...(prefixMatches ?? []), ...substringMatches];
-
-        // Deduplicate just in case (should be handled by the .not() but good for safety)
         const unique = combined.filter((v, i, a) => a.findIndex(t => (t.name === v.name)) === i);
 
-        // Format for frontend
         const formatted = unique.map(p => ({
             name: p.name,
-            category: p.category || 'general'
+            category: p.category || 'general',
+            price: p.price,
+            image: p.image_url,
+            storeCount: p.store_count || 1
         }));
 
         return NextResponse.json({ success: true, data: formatted });

@@ -36,6 +36,8 @@ export const SYNONYM_MAP: Record<string, string[]> = {
     basmati: ['rice', 'chawal'],
 };
 
+import { smartTruncateQuery } from './normalize';
+
 // ── Relevance Scoring ─────────────────────────────────────────────────────────
 /**
  * Scores a listing for relevance to a query.
@@ -46,8 +48,12 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     const category = (listing.product_category ?? '').toLowerCase();
     const searchTerms = (listing.search_terms ?? []) as string[];
 
-    // ── Tier 0: Absolute Exact Match ──────────────────────────────────────────
-    if (name === queryLower) return 120;
+    // Use a cleaned "core" query for smarter token matching
+    const coreQuery = smartTruncateQuery(queryLower);
+    const coreTokens = coreQuery.split(/\s+/).filter(t => t.length >= 2);
+
+    // ── Tier 0: Absolute Exact Match (Original or Core) ────────────────────────
+    if (name === queryLower || name === coreQuery) return 120;
 
     // Tokenize product name — split on non-alphanumeric, filter short noise
     const nameTokens = name.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 2);
@@ -57,8 +63,7 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     const significantTokens = nameTokens.filter((t: string) => !weightUnitRe.test(t) && !/^\d+$/.test(t));
 
     // ── Tier 0.5: Significant Tokens Match ─────────────────────────────────────
-    const qTokens = queryLower.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
-    if (qTokens.length > 0 && qTokens.length === significantTokens.length && qTokens.every((t, i) => t === significantTokens[i])) return 115;
+    if (coreTokens.length > 0 && coreTokens.length === significantTokens.length && coreTokens.every((t, i) => t === significantTokens[i])) return 115;
 
     // Check if query appears as an exact token in the name
     const escaped = queryLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -115,13 +120,12 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     if (searchTerms.some(t => t.toLowerCase().startsWith(queryLower))) return 30;
 
     // ── Tier 7: Multi-word query token overlap ─────────────────────────────────
-    if (queryLower.includes(' ')) {
-        const queryTokens = queryLower.split(/\s+/).filter(t => t.length >= 3);
+    if (coreTokens.length > 0) {
         let overlapCount = 0;
-        for (const qt of queryTokens) {
+        for (const qt of coreTokens) {
             if (nameTokens.includes(qt)) overlapCount++;
         }
-        if (overlapCount > 0 && overlapCount >= Math.ceil(queryTokens.length / 2)) return 50 + (overlapCount * 5);
+        if (overlapCount > 0 && overlapCount >= Math.ceil(coreTokens.length / 2)) return 50 + (overlapCount * 5);
     }
 
     // ── Tier 8: Category match ──────────────────────────────────────────────────
