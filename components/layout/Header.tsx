@@ -81,10 +81,9 @@ export default function Header() {
 
           {/* Logo */}
           <div className="flex-1 min-w-0">
-            <Link href="/" aria-label="BharatStores Home">
-              <Logo />
-            </Link>
+            <Logo />
           </div>
+
 
           {/* Desktop search */}
           <div className="hidden md:block flex-1 max-w-2xl mx-4">
