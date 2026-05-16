@@ -78,6 +78,14 @@ export async function GET(req: NextRequest) {
       const productName = listing.products?.name || listing.product_name || 'Unnamed Product';
       const isSaleInName = productName.toLowerCase().includes('sale');
       
+      // Infer and Map category to UI slug
+      const inferred = inferCategory(productName);
+      let categorySlug = inferred;
+      if (categorySlug === 'lentils') categorySlug = 'dal';
+      if (categorySlug === 'flour') categorySlug = 'rice';
+      if (categorySlug === 'oil-ghee') categorySlug = 'dairy';
+      if (categorySlug === 'sweets') categorySlug = 'snacks';
+
       // Base price for comparison
       const basePrice = avg7d || comparePrice || (isSaleInName ? currentPrice * 1.2 : null);
 
@@ -95,7 +103,7 @@ export async function GET(req: NextRequest) {
         product_id: listing.product_id,
         product_name: productName,
         image_url: listing.image_url ?? '',
-        category: listing.product_category ?? 'grocery',
+        category: categorySlug,
         weight: listing.weight_label ?? '',
         store_slug: storeSlug,
         store_name: storeConfig.label,
@@ -141,4 +149,17 @@ export async function GET(req: NextRequest) {
     console.error('Deals cron error:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
+}
+
+function inferCategory(name: string): string {
+  const combined = name.toLowerCase();
+  if (/rice|chawal|basmati|sona/.test(combined)) return 'rice';
+  if (/atta|flour|besan|maida|sooji|suji/.test(combined)) return 'rice'; 
+  if (/dal|lentil|bean|chana|toor|moong|masoor|rajma/.test(combined)) return 'dal';
+  if (/ghee|butter ghee|oil|cooking oil/.test(combined)) return 'dairy'; 
+  if (/spice|masala|turmeric|cumin|coriander|cardamom|pepper|chilli|haldi|jeera/.test(combined)) return 'spices';
+  if (/snack|namkeen|chips|biscuit|cookie|sweet|mithai|halwa|ladoo|barfi/.test(combined)) return 'snacks';
+  if (/paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi/.test(combined)) return 'dairy';
+  if (/frozen/.test(combined)) return 'frozen';
+  return 'general';
 }
