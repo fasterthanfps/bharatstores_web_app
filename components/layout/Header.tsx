@@ -109,7 +109,6 @@ export default function Header() {
                     : 'text-masala-text hover:text-masala-primary hover:bg-masala-muted/30'
                 }`}
               >
-                {link.icon && <span>{link.icon}</span>}
                 {link.label}
               </Link>
             ))}
