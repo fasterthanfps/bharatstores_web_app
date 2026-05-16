@@ -60,15 +60,14 @@ export default function DealsPage() {
 
   const toggleCompare = (product: any) => {
     setComparedItems(prev => {
-      const exists = prev.find(item => item.id === product.id);
-      if (exists) return prev.filter(item => item.id !== product.id);
+      const exists = prev.find(item => item.id === product.product_id);
+      if (exists) return prev.filter(item => item.id !== product.product_id);
       if (prev.length >= 4) return prev;
       return [...prev, {
         id: product.product_id,
         name: product.product_name,
         image_url: product.image_url,
-        price: product.current_price,
-        store: product.store_slug
+        bestPrice: product.current_price,
       }];
     });
   };
@@ -267,7 +266,11 @@ export default function DealsPage() {
         )}
       </main>
 
-      <CompareTray items={comparedItems} onRemove={(id) => setComparedItems(prev => prev.filter(i => i.id !== id))} />
+      <CompareTray 
+        items={comparedItems} 
+        onRemove={(id) => setComparedItems(prev => prev.filter(i => i.id !== id))}
+        onClear={() => setComparedItems([])} 
+      />
     </div>
   );
 }
