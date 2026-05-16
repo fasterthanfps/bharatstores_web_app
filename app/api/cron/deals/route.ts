@@ -22,30 +22,39 @@ export async function GET(req: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    // 1. Get all in-stock listings
+    // 1. Get all in-stock listings with product names
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
-      .select('id, product_id, product_name, store_name, price, availability, product_url, image_url, weight_label, price_per_kg, product_category')
+      .select(`
+        id, 
+        product_id, 
+        product_name,
+        store_name, 
+        price, 
+        compare_price, 
+        availability, 
+        product_url, 
+        image_url, 
+        weight_label, 
+        price_per_kg, 
+        product_category,
+        products ( name )
+      `)
       .in('availability', ['IN_STOCK', 'UNKNOWN']);
 
     if (listingsError || !listings) {
       return NextResponse.json({ error: 'Failed to fetch listings', detail: listingsError?.message }, { status: 500 });
     }
 
-    // 2. Get 7-day price history for each listing
+    // 2. Get 7-day price history
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: history, error: historyError } = await supabase
+    const { data: history } = await supabase
       .from('price_history')
       .select('listing_id, price')
       .gte('recorded_at', sevenDaysAgo);
 
-    if (historyError) {
-      console.error('History fetch error:', historyError.message);
-    }
-
-    // Build listing_id → avg price map
     const avgMap = new Map<string, number>();
-    if (history && history.length > 0) {
+    if (history) {
       const groups = new Map<string, number[]>();
       for (const row of history) {
         if (!row.listing_id) continue;
@@ -57,19 +66,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Calculate deals (current price < 7d average by > 3%)
+    // 3. Calculate deals
     const dealsToUpsert = [];
     const listingIdsWithDeals = new Set<string>();
 
-    for (const listing of listings) {
+    for (const l of listings) {
+      const listing = l as any;
       const currentPrice = Number(listing.price);
       const avg7d = avgMap.get(listing.id);
+      const comparePrice = listing.compare_price ? Number(listing.compare_price) : null;
+      const productName = listing.products?.name || listing.product_name || 'Unnamed Product';
+      const isSaleInName = productName.toLowerCase().includes('sale');
+      
+      // Base price for comparison
+      const basePrice = avg7d || comparePrice || (isSaleInName ? currentPrice * 1.2 : null);
 
-      // No history yet → skip
-      if (!avg7d) continue;
+      if (!basePrice || basePrice <= currentPrice) continue;
 
-      const discountPct = ((avg7d - currentPrice) / avg7d) * 100;
-      if (discountPct <= 3) continue; // Not enough of a deal
+      const discountPct = ((basePrice - currentPrice) / basePrice) * 100;
+      if (discountPct <= 3 && !isSaleInName) continue;
 
       const storeSlug = listing.store_name?.toLowerCase().replace(/\s+/g, '') ?? '';
       const storeConfig = getStoreConfig(storeSlug);
@@ -78,16 +93,16 @@ export async function GET(req: NextRequest) {
       dealsToUpsert.push({
         listing_id: listing.id,
         product_id: listing.product_id,
-        product_name: listing.product_name ?? 'Unnamed Product',
+        product_name: productName,
         image_url: listing.image_url ?? '',
         category: listing.product_category ?? 'grocery',
         weight: listing.weight_label ?? '',
         store_slug: storeSlug,
         store_name: storeConfig.label,
         current_price: currentPrice,
-        avg_price_7d: Math.round(avg7d * 100) / 100,
+        avg_price_7d: Math.round(basePrice * 100) / 100,
         discount_percent: Math.round(discountPct * 10) / 10,
-        savings_amount: Math.round((avg7d - currentPrice) * 100) / 100,
+        savings_amount: Math.round((basePrice - currentPrice) * 100) / 100,
         price_per_kg: listing.price_per_kg ? Number(listing.price_per_kg) : null,
         in_stock: true,
         url: listing.product_url,
@@ -100,13 +115,9 @@ export async function GET(req: NextRequest) {
     if (dealsToUpsert.length > 0) {
       const { error: upsertError } = await supabase
         .from('product_deals')
-        .upsert(dealsToUpsert as any, { onConflict: 'listing_id' });
+        .upsert(dealsToUpsert, { onConflict: 'listing_id' });
 
-      if (upsertError) {
-        console.error('Upsert error:', upsertError.message);
-      } else {
-        upserted = dealsToUpsert.length;
-      }
+      if (!upsertError) upserted = dealsToUpsert.length;
     }
 
     // 5. Delete stale deals (listings that no longer qualify)
