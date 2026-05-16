@@ -45,7 +45,9 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     const name = (listing.product_name ?? listing.name ?? '').toLowerCase();
     const category = (listing.product_category ?? '').toLowerCase();
     const searchTerms = (listing.search_terms ?? []) as string[];
-    const escaped = queryLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // ── Tier 0: Absolute Exact Match ──────────────────────────────────────────
+    if (name === queryLower) return 120;
 
     // Tokenize product name — split on non-alphanumeric, filter short noise
     const nameTokens = name.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 2);
@@ -54,15 +56,15 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     const weightUnitRe = /^\d+(g|kg|ml|l|oz|lb|pc|pcs|pack|x)$/;
     const significantTokens = nameTokens.filter((t: string) => !weightUnitRe.test(t) && !/^\d+$/.test(t));
 
+    // ── Tier 0.5: Significant Tokens Match ─────────────────────────────────────
+    const qTokens = queryLower.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+    if (qTokens.length > 0 && qTokens.length === significantTokens.length && qTokens.every((t, i) => t === significantTokens[i])) return 115;
+
     // Check if query appears as an exact token in the name
+    const escaped = queryLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const wordBoundary = new RegExp(`\\b${escaped}\\b`);
     const isFirstToken = significantTokens[0] === queryLower;
     const hasWordBoundary = wordBoundary.test(name);
-
-    // ── Tier 0: Query is the ONLY meaningful word (pure match) ─────────────────
-    if (significantTokens.length === 1 && significantTokens[0] === queryLower) return 120;
-    if (significantTokens.length === 2 && significantTokens[0] === queryLower &&
-        significantTokens[1].length <= 4) return 115; 
 
     // ── Tier 1: Word-boundary match AND query is first token ───────────────────
     if (hasWordBoundary && isFirstToken) return 100;
@@ -73,13 +75,16 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     // ── Tier 2: Name starts with query ─────────────────────────────────────────
     if (name.startsWith(queryLower)) return 85;
 
-    // ── Tier 3: Direct substring — only if at a real token boundary ────────────
+    // ── Tier 3: Direct substring ───────────────────────────────────────────────
     if (name.includes(queryLower)) {
-        const trueTokenMatch = nameTokens.some((token: string) =>
-            token === queryLower || token.startsWith(queryLower)
-        );
-        if (trueTokenMatch) return 75;
-        return 0; // Embedded false positive: REJECT
+        if (!queryLower.includes(' ')) {
+            const trueTokenMatch = nameTokens.some((token: string) =>
+                token === queryLower || token.startsWith(queryLower)
+            );
+            if (trueTokenMatch) return 75;
+            return 0; // Embedded false positive
+        }
+        return 80; 
     }
 
     // ── Tier 4: Synonym word-boundary match ────────────────────────────────────
@@ -88,18 +93,14 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         const synWords = syn.split(/\s+/);
         const synRe = new RegExp(`\\b${synEsc}\\b`);
         if (synRe.test(name)) return 65;
-        // Multi-word synonym: check if first word of synonym appears as a token
         if (name.includes(syn) || nameTokens.some((t: string) => t === synWords[0])) return 55;
     }
 
     // ── Tier 5: Brand Boost ────────────────────────────────────────────────────
-    // CRITICAL: Only boost if the product NAME has a direct token match for query.
-    // This prevents Maggi (tagged as "atta" search_term) from getting boosted
-    // when the product name "Maggi Noodles" has NO "atta" token.
     const nameHasQueryToken = nameTokens.some((t: string) =>
         t === queryLower || t.startsWith(queryLower)
     );
-    if (nameHasQueryToken) {
+    if (nameHasQueryToken || queryLower.includes(' ')) {
         const popularBrands = [
             'kissan', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali',
             'aashirvaad', 'heera', 'amul', 'everest', 'catch', 'kohinoor', 'maggi'
@@ -110,19 +111,17 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     }
 
     // ── Tier 6: Search-terms tag match ─────────────────────────────────────────
-    // Lower priority — tagged products (e.g. Maggi tagged with "atta") score ≤ 40.
-    // They appear in "Related Products" (score < 80 threshold), NOT in "Exact Matches".
     if (searchTerms.some(t => t.toLowerCase() === queryLower)) return 40;
     if (searchTerms.some(t => t.toLowerCase().startsWith(queryLower))) return 30;
 
     // ── Tier 7: Multi-word query token overlap ─────────────────────────────────
     if (queryLower.includes(' ')) {
-        const qTokens = queryLower.split(/\s+/).filter(t => t.length >= 3);
-        for (const qt of qTokens) {
-            for (const nt of nameTokens) {
-                if (nt === qt) return 50;
-            }
+        const queryTokens = queryLower.split(/\s+/).filter(t => t.length >= 3);
+        let overlapCount = 0;
+        for (const qt of queryTokens) {
+            if (nameTokens.includes(qt)) overlapCount++;
         }
+        if (overlapCount > 0 && overlapCount >= Math.ceil(queryTokens.length / 2)) return 50 + (overlapCount * 5);
     }
 
     // ── Tier 8: Category match ──────────────────────────────────────────────────
