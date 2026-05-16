@@ -7,7 +7,7 @@ import { findCategoryUrl } from '../categoryMap';
 export class DookanScraper extends BaseScraper {
     storeId = 'dookan';
     storeName = 'Dookan';
-    private baseUrl = 'https://eu.dookan.com';
+    private baseUrl = 'https://www.dookan.de';
 
     async scrape(query: string): Promise<ScraperResult> {
         const start = Date.now();

@@ -7,7 +7,7 @@ import { findCategoryUrl } from '../categoryMap';
 export class JamoonaScraper extends BaseScraper {
     storeId = 'jamoona';
     storeName = 'Jamoona';
-    private baseUrl = 'https://www.jamoona.com';
+    private baseUrl = 'https://www.jamoona.de';
 
     async scrape(query: string): Promise<ScraperResult> {
         const start = Date.now();

@@ -56,6 +56,22 @@ export default function ProductCard({
           <span className="text-4xl select-none">🛒</span>
         )}
 
+        {/* Compare Toggle — top left */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            onCompareToggle?.();
+          }}
+          className={`absolute top-2 left-2 w-8 h-8 rounded-full border transition-all flex items-center justify-center shadow-sm z-10 ${
+            isCompared 
+              ? 'bg-masala-primary border-masala-primary text-white scale-110' 
+              : 'bg-white/80 border-masala-border text-masala-text-muted hover:text-masala-primary hover:border-masala-primary'
+          }`}
+          title={isCompared ? 'Remove from comparison' : 'Add to compare'}
+        >
+          {isCompared ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        </button>
+
         {/* Store badge — bottom left */}
         <div className="absolute bottom-2 left-2 flex items-center gap-1 flex-wrap">
           <span
@@ -140,6 +156,8 @@ export default function ProductCard({
                 price: listing.bestPrice,
                 weight: bestPriceListing.weight_label ?? '',
                 url: bestPriceListing.product_url,
+                storeHandle: bestPriceListing.store_handle,
+                variantId: bestPriceListing.variant_id,
               })
             }
             className={`h-[42px] w-[42px] rounded-xl border-2 flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${

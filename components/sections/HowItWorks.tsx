@@ -1,69 +1,72 @@
+import { Search, BarChart3, ShoppingBag, CheckCircle2 } from 'lucide-react';
+
 const STEPS = [
   {
-    number: '01',
-    icon: '🔍',
-    title: 'Search Any Product',
-    desc: 'Type in English or German. Our smart search understands both and finds exact matches instantly.',
-    color: 'bg-blue-50 border-blue-100',
-    numColor: 'text-blue-400',
+    icon: <Search className="h-7 w-7" />,
+    title: 'Search Anything',
+    desc: 'Search in English or German. We find exact matches from all 8 stores instantly.',
+    color: 'bg-[#FDF7F2]',
+    iconColor: 'text-orange-500',
   },
   {
-    number: '02', 
-    icon: '📊',
-    title: 'Compare Live Prices',
-    desc: 'See prices from all 8 Indian stores side by side — updated every few hours. Including delivery costs.',
-    color: 'bg-amber-50 border-amber-100',
-    numColor: 'text-amber-400',
+    icon: <BarChart3 className="h-7 w-7" />,
+    title: 'Compare Prices',
+    desc: 'See live prices side-by-side. Compare weight, price-per-kg, and stock status.',
+    color: 'bg-[#F5F9F5]',
+    iconColor: 'text-emerald-500',
   },
   {
-    number: '03',
-    icon: '🛒',
-    title: 'Add to Smart Cart',
-    desc: 'Add items from multiple stores. We calculate delivery totals and show you the cheapest real basket.',
-    color: 'bg-green-50 border-green-100',
-    numColor: 'text-green-400',
+    icon: <ShoppingBag className="h-7 w-7" />,
+    title: 'Smart Cart',
+    desc: 'Add items from multiple shops. We find the cheapest combination including delivery.',
+    color: 'bg-[#F7F7FF]',
+    iconColor: 'text-blue-500',
   },
   {
-    number: '04',
-    icon: '✅',
-    title: 'Checkout at Best Price',
-    desc: 'Go directly to the store with your cart pre-filled. One click. No re-typing. Save time and money.',
-    color: 'bg-masala-muted border-masala-border',
-    numColor: 'text-masala-primary/40',
+    icon: <CheckCircle2 className="h-7 w-7" />,
+    title: 'Direct Checkout',
+    desc: 'Go straight to the store with your cart pre-filled. Save time and money.',
+    color: 'bg-[#FFFDF0]',
+    iconColor: 'text-amber-500',
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section className="py-16 bg-white border-y border-masala-border">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <span className="text-xs font-black uppercase tracking-[0.3em] text-masala-primary">
+    <section className="py-24 bg-white border-y border-masala-border relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="text-center mb-16">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-masala-primary/10 text-[11px] font-black uppercase tracking-[0.2em] text-masala-primary mb-4">
             How it works
           </span>
-          <h2 className="text-3xl font-black mt-2" style={{ fontFamily: 'Fraunces, serif' }}>
-            Save smarter in 4 steps
+          <h2 className="text-4xl sm:text-5xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
+            Shopping Made Smarter.
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {STEPS.map((step, i) => (
-            <div key={i} className={`relative rounded-2xl border p-6 ${step.color}`}>
-              <span className={`text-5xl font-black ${step.numColor} leading-none`}>
-                {step.number}
-              </span>
-              <div className="text-3xl mt-3 mb-2">{step.icon}</div>
-              <h3 className="font-bold text-masala-text mb-2">{step.title}</h3>
-              <p className="text-sm text-masala-text-muted leading-relaxed">{step.desc}</p>
+            <div key={i} className="group relative flex flex-col items-center text-center">
+              <div className={`w-20 h-20 rounded-[2rem] ${step.color} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-sm`}>
+                <div className={step.iconColor}>{step.icon}</div>
+              </div>
+              <h3 className="text-xl font-black text-masala-text mb-3">{step.title}</h3>
+              <p className="text-masala-text-muted text-sm leading-relaxed max-w-[240px]">
+                {step.desc}
+              </p>
+              
+              {/* Connector for desktop */}
               {i < STEPS.length - 1 && (
-                <div className="hidden lg:block absolute top-1/2 -right-3 text-masala-border text-xl z-10">
-                  →
-                </div>
+                <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-px bg-gradient-to-r from-masala-border to-transparent -z-10" />
               )}
             </div>
           ))}
         </div>
       </div>
+      
+      {/* Background decoration */}
+      <div className="absolute top-1/2 left-0 w-64 h-64 bg-masala-primary/5 blur-[100px] rounded-full -translate-y-1/2 -z-0" />
+      <div className="absolute top-1/2 right-0 w-64 h-64 bg-masala-accent/5 blur-[100px] rounded-full -translate-y-1/2 -z-0" />
     </section>
   );
 }

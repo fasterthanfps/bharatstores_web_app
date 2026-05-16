@@ -8,7 +8,7 @@ import { findCategoryUrl } from '../categoryMap';
 export class SwadeshScraper extends BaseScraper {
     storeId = 'swadesh';
     storeName = 'Swadesh';
-    private baseUrl = 'https://www.swadesh.eu';
+    private baseUrl = 'https://www.swadesh.de';
 
     async scrape(query: string): Promise<ScraperResult> {
         const start = Date.now();

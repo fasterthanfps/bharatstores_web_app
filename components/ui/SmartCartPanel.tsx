@@ -111,7 +111,15 @@ function StoreSection({ storeSlug, items, storeTotal, onClearStore, onUpdateQty,
 
   const cartResult = buildCartUrl(
     storeSlug,
-    items.map((i) => ({ variantId: i.variantId, handle: i.productId, qty: i.quantity })),
+    items.map((i) => ({
+      productId: i.productId,
+      productName: i.productName,
+      storeSlug: i.storeSlug,
+      storeHandle: i.storeHandle,
+      variantId: i.variantId,
+      quantity: i.quantity,
+      url: i.url
+    })),
   );
 
   return (
@@ -201,18 +209,29 @@ function StoreSection({ storeSlug, items, storeTotal, onClearStore, onUpdateQty,
             </div>
 
             <a
-              href={cartResult.url ?? `https://www.google.com/search?q=${encodeURIComponent(config.label + ' Indian grocery')}`}
+              href={cartResult.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full h-10 bg-masala-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-masala-secondary transition-colors mt-1"
+              className={`w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors mt-1 ${
+                cartResult.confidence === 'high'
+                  ? 'bg-masala-primary text-white hover:bg-masala-secondary shadow-sm shadow-masala-primary/20'
+                  : 'bg-masala-primary/80 text-white hover:bg-masala-primary'
+              }`}
             >
               {cartResult.method === 'shopify_cart'
-                ? `🛒 Checkout at ${config.label} →`
-                : `Visit ${config.label} →`}
+                ? '🛒 Checkout with items →'
+                : cartResult.method === 'direct_url'
+                ? '🛒 Go to product page →'
+                : `🔍 Search at ${config.label} →`}
             </a>
-            {cartResult.method !== 'shopify_cart' && (
-              <p className="text-[10px] text-masala-text-muted text-center">
-                Pre-filled cart not yet available for this store
+            {cartResult.confidence === 'low' && (
+              <p className="text-[10px] text-amber-600 text-center mt-1">
+                ⚠️ Cart pre-fill unavailable — you'll need to add items manually
+              </p>
+            )}
+            {cartResult.note && cartResult.confidence !== 'low' && (
+              <p className="text-[10px] text-masala-text-muted text-center mt-1">
+                {cartResult.note}
               </p>
             )}
           </div>

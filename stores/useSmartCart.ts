@@ -14,6 +14,7 @@ export interface CartItem {
   weight: string;
   url: string;       // store product URL
   variantId?: string; // Shopify variant ID for pre-filled cart
+  storeHandle?: string; // Store's own product slug
   addedAt: string;   // ISO string (Date serialises to string in localStorage)
 }
 

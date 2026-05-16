@@ -53,6 +53,8 @@ model Listing {
   weightLabel   String?   @map("weight_label")
   pricePerKg    Decimal?  @map("price_per_kg") @db.Decimal
   lastScrapedAt DateTime  @default(now()) @map("last_scraped_at") @db.Timestamptz(6)
+  storeHandle   String?   @map("store_handle")
+  variantId     String?   @map("variant_id")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   

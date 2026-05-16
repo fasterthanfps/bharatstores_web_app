@@ -76,22 +76,22 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 bg-white shadow-sm">
 
-        {/* ── Top bar: Logo + Cart ── */}
-        <div className="flex items-center gap-2 px-4 h-14 md:h-16 border-b border-masala-border/60">
+        {/* ── Top bar: Logo + Search + Cart ── */}
+        <div className="flex items-center px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full">
 
           {/* Logo */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-shrink-0">
             <Logo />
           </div>
 
 
-          {/* Desktop search */}
-          <div className="hidden md:block flex-1 max-w-2xl mx-4">
+          {/* Desktop search - FIXED: expanded for central prominence */}
+          <div className="hidden md:block flex-1 max-w-3xl mx-8 lg:mx-16">
             <SearchAutocomplete size="header" />
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-2">
             {[
               { href: '/blog', label: t('nav.blog') },
               { href: '/alerts', label: t('nav.priceAlert') },
@@ -100,19 +100,19 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-masala-text hover:text-masala-primary hover:bg-masala-muted/40 transition-colors"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-masala-text hover:text-masala-primary hover:bg-masala-muted/40 transition-colors"
               >
                 {link.label}
               </Link>
             ))}
             <button
               onClick={() => setCartOpen(true)}
-              className="relative ml-1 p-2.5 rounded-xl text-masala-text hover:text-masala-primary hover:bg-masala-muted/40 transition-colors"
+              className="relative ml-2 p-2.5 rounded-xl bg-masala-muted/40 text-masala-text hover:text-masala-primary hover:bg-masala-muted/60 transition-colors"
               aria-label="Open Smart Cart"
             >
               <ShoppingCart className="h-5 w-5" />
               {mounted && totalItems > 0 && (
-                <span className="absolute top-1 right-1 w-[18px] h-[18px] rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center shadow-sm">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}
@@ -122,7 +122,7 @@ export default function Header() {
           {/* Mobile: Cart button */}
           <button
             onClick={() => setCartOpen(true)}
-            className="md:hidden relative flex items-center justify-center w-11 h-11 rounded-2xl bg-masala-muted/40 text-masala-text active:scale-90 transition-all"
+            className="md:hidden ml-auto relative flex items-center justify-center w-11 h-11 rounded-2xl bg-masala-muted/40 text-masala-text active:scale-90 transition-all"
             aria-label="Open Smart Cart"
           >
             <ShoppingCart className="h-[22px] w-[22px]" />

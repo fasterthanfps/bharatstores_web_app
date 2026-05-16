@@ -149,6 +149,8 @@ export interface GroupedListing {
         image_url: string | null;
         weight_label: string | null;
         price_per_kg: number | null;
+        store_handle?: string;
+        variant_id?: string;
     }[];
 }
 
@@ -191,6 +193,8 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
                 image_url: l.image_url,
                 weight_label: l.weight_label,
                 price_per_kg: l.price_per_kg ? Number(l.price_per_kg) : null,
+                store_handle: l.store_handle,
+                variant_id: l.variant_id,
             }))
         };
     }).sort((a, b) => {
@@ -254,12 +258,12 @@ export async function saveAndReturnListings(
 
     const STORE_DOMAIN_MAP: Record<string, string> = {
         grocera: 'grocera.de',
-        jamoona: 'jamoona.com',
-        littleindia: 'littleindia.de',
+        jamoona: 'jamoona.de',
+        littleindia: 'little-india.de',
         nammamarkt: 'nammamarkt.com',
-        dookan: 'eu.dookan.com',
-        swadesh: 'swadesh.eu',
-        angaadi: 'angaadi-online.de',
+        dookan: 'dookan.de',
+        swadesh: 'swadesh.de',
+        angaadi: 'angaadi.de',
         spicevillage: 'spicevillage.eu',
     };
 
@@ -309,6 +313,9 @@ export async function saveAndReturnListings(
 
                 if (!product) continue;
 
+                const storeHandle = item.productUrl?.match(/\/products\/([^?#/]+)/)?.[1] || null;
+                const variantId = item.productUrl?.match(/[?&]variant=(\d+)/)?.[1] || null;
+
                 const { data: listing } = await supabase
                     .from('listings')
                     .upsert({
@@ -322,6 +329,8 @@ export async function saveAndReturnListings(
                         weight_grams: item.weightGrams,
                         weight_label: item.weightLabel,
                         price_per_kg: item.pricePerKg,
+                        store_handle: storeHandle,
+                        variant_id: variantId,
                         last_scraped_at: new Date().toISOString(),
                     }, { onConflict: 'product_id,store_id' })
                     .select()

@@ -174,40 +174,42 @@ function SearchPageContent() {
               </button>
             </div>
 
-            {/* Sort tabs + Filter button */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex items-center bg-white border border-masala-border rounded-2xl p-1 gap-0.5 shadow-sm flex-shrink-0">
-                {SORT_TABS.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setFilters({ sort: tab.id })}
-                    className={`px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide transition-all whitespace-nowrap min-h-[36px] ${
-                      filters.sort === tab.id
-                        ? 'bg-masala-primary text-white shadow-sm'
-                        : 'text-masala-text-muted hover:text-masala-text'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+            {/* Sort tabs + Filter button - FIXED: sticky below header */}
+            <div className="sticky top-[56px] md:top-20 z-30 bg-masala-bg/90 backdrop-blur-md -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-4 border-b border-masala-border/50 lg:border-none">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center bg-white border border-masala-border rounded-2xl p-1 gap-0.5 shadow-sm flex-shrink-0">
+                  {SORT_TABS.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setFilters({ sort: tab.id })}
+                      className={`px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide transition-all whitespace-nowrap min-h-[36px] ${
+                        filters.sort === tab.id
+                          ? 'bg-masala-primary text-white shadow-sm'
+                          : 'text-masala-text-muted hover:text-masala-text'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
-              <button
-                onClick={() => setFilterOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-2xl border min-h-[36px] text-[12px] font-bold whitespace-nowrap flex-shrink-0 shadow-sm transition-all active:scale-95 ${
-                  activeFilterCount > 0
-                    ? 'bg-masala-primary text-white border-masala-primary'
-                    : 'bg-white border-masala-border text-masala-text hover:border-masala-primary'
-                }`}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-white text-masala-primary text-[10px] font-black flex items-center justify-center">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
+                <button
+                  onClick={() => setFilterOpen(true)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl border min-h-[36px] text-[12px] font-bold whitespace-nowrap flex-shrink-0 shadow-sm transition-all active:scale-95 ${
+                    activeFilterCount > 0
+                      ? 'bg-masala-primary text-white border-masala-primary'
+                      : 'bg-white border-masala-border text-masala-text hover:border-masala-primary'
+                  }`}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-white text-masala-primary text-[10px] font-black flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
