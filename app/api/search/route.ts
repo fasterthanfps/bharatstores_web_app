@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import {
     FRESH_TTL_MS,
     SYNONYM_MAP,
-    sortByRelevance,
+    groupListingsByProduct,
     splitExactVsRelated,
     shapeListings,
     saveAndReturnListings
@@ -45,11 +45,8 @@ export async function GET(req: NextRequest) {
     const sortCol = sort === 'price_per_kg' ? 'price_per_kg' : 'price';
     const freshCutoff = new Date(Date.now() - FRESH_TTL_MS).toISOString();
     const synonyms = SYNONYM_MAP[queryLower] ?? [];
-
-    // Build combined search terms (query + synonyms for broader DB match)
     const allTerms = [queryLower, ...synonyms];
 
-    // ── 1. Fetch all cached listings (fresh + stale) for query + synonyms ──────
     const orClauses = allTerms
         .map(t => `name.ilike.%${t}%`)
         .join(',');
@@ -59,64 +56,40 @@ export async function GET(req: NextRequest) {
         .select(`*, stores ( name, logo_url, domain ), products!inner ( name, slug, category, search_terms )`)
         .or(orClauses, { foreignTable: 'products' })
         .order(sortCol, { ascending: true })
-        .limit(200);
+        .limit(300);
 
-    // Deduplicate
-    const seen = new Set<string>();
-    const filtered = (allCached ?? []).filter((l) => {
-        if (seen.has(l.id)) return false;
-        seen.add(l.id);
-        return true;
+    const shaped = shapeListings(allCached ?? []);
+    
+    // Group by product
+    const currentGrouped = groupListingsByProduct(shaped, queryLower, synonyms, sortCol);
+
+    // Separate fresh vs stale (based on the best listing in each group)
+    const freshResults = currentGrouped.filter((p) => {
+        const best = p.allPrices[0];
+        // @ts-ignore
+        return best && best.last_scraped_at >= freshCutoff;
     });
 
-    const shaped = shapeListings(filtered);
+    const hasFresh = freshResults.length > 0;
+    const finalResults = hasFresh ? freshResults : currentGrouped;
 
-    // Separate fresh vs stale
-    const freshListings = shaped.filter((l) => l.last_scraped_at && l.last_scraped_at >= freshCutoff);
-    const hasFresh = freshListings.length > 0;
-    const hasStale = shaped.length > 0 && !hasFresh;
+    const { exact, related } = splitExactVsRelated(finalResults);
 
-    // Score + sort + split for fresh data
-    if (hasFresh) {
-        const scored = sortByRelevance(freshListings, queryLower, synonyms, sortCol);
-        // Filter out zero-score listings (noise/false positives)
-        const relevant = scored.filter(l => l._score > 0);
-        const { exact, related } = splitExactVsRelated(relevant);
-
-        if (exact.length > 0 || relevant.length >= 5) {
-            return NextResponse.json({
-                success: true,
-                data: {
-                    listings: relevant,
-                    exactCount: exact.length,
-                    relatedCount: related.length,
-                    fresh: true,
-                    cached: true,
-                },
-            });
-        }
-    }
-
-    // Stale cache: return now, refresh in background
-    if (hasStale) {
-        const scored = sortByRelevance(shaped, queryLower, synonyms, sortCol);
-        const relevant = scored.filter(l => l._score > 0);
-        const { exact, related } = splitExactVsRelated(relevant);
-
-        if (exact.length > 0 || relevant.length >= 3) {
-            triggerBackgroundScrape(query, sortCol);
-            return NextResponse.json({
-                success: true,
-                data: {
-                    listings: relevant,
-                    exactCount: exact.length,
-                    relatedCount: related.length,
-                    fresh: false,
-                    cached: true,
-                    refreshing: true,
-                },
-            });
-        }
+    if (finalResults.length > 0) {
+        if (!hasFresh) triggerBackgroundScrape(query, sortCol);
+        
+        return NextResponse.json({
+            success: true,
+            data: {
+                listings: finalResults,
+                exactCount: exact.length,
+                relatedCount: related.length,
+                total: finalResults.length,
+                fresh: hasFresh,
+                cached: true,
+                refreshing: !hasFresh,
+            },
+        });
     }
 
     // ── 2. No valid cache — run scrapers live ─────────────────────────────────
@@ -127,43 +100,32 @@ export async function GET(req: NextRequest) {
         const scraperResults: any = await Promise.race([
             orchestrator.runAll(query),
             new Promise<null>((_, reject) =>
-                setTimeout(() => reject(new Error('Scraper timeout')), 30000)
+                setTimeout(() => reject(new Error('Scraper timeout')), 35000)
             ),
         ]);
 
         if (scraperResults) {
             const serviceClient = createServiceClient();
             const liveListings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
+            
+            const liveGrouped = groupListingsByProduct(liveListings, queryLower, synonyms, sortCol);
+            const { exact: e, related: r } = splitExactVsRelated(liveGrouped);
 
-            // Deduplicate live results
-            const seenLive = new Set<string>();
-            const uniqueLive = liveListings.filter(l => {
-                if (seenLive.has(l.id)) return false;
-                seenLive.add(l.id);
-                return true;
-            });
-
-            const scored = sortByRelevance(uniqueLive, queryLower, synonyms, sortCol);
-            const relevant = scored.filter(l => l._score > 0);
-            const { exact, related } = splitExactVsRelated(relevant);
             return NextResponse.json({
                 success: true,
-                data: { listings: relevant, exactCount: exact.length, relatedCount: related.length, fresh: true, cached: false },
+                data: { 
+                    listings: liveGrouped, 
+                    exactCount: e.length, 
+                    relatedCount: r.length, 
+                    total: liveGrouped.length,
+                    fresh: true, 
+                    cached: false 
+                },
             });
         }
     } catch (e: any) {
         console.error('[Search API] Live scrape failed:', e.message);
     }
 
-    // ── 3. Last resort ────────────────────────────────────────────────────────
-    if (shaped.length > 0) {
-        const scored = sortByRelevance(shaped, queryLower, synonyms, sortCol);
-        const relevant = scored.filter(l => l._score > 0);
-        return NextResponse.json({
-            success: true,
-            data: { listings: relevant, fresh: false, cached: true },
-        });
-    }
-
-    return NextResponse.json({ success: true, data: { listings: [], fresh: false } });
+    return NextResponse.json({ success: true, data: { listings: [], total: 0, fresh: false } });
 }

@@ -8,12 +8,19 @@
         },
         "app/api/cron/refresh-cache/route.ts": {
             "maxDuration": 60
+        },
+        "app/api/cron/deals/route.ts": {
+            "maxDuration": 60
         }
     },
     "crons": [
         {
             "path": "/api/cron/refresh-cache",
             "schedule": "0 */6 * * *"
+        },
+        {
+            "path": "/api/cron/deals",
+            "schedule": "0 */2 * * *"
         }
     ]
 }

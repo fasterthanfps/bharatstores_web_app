@@ -32,6 +32,7 @@ function SearchPageContent() {
   const [elapsedSecs, setElapsedSecs] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const [compareItems, setCompareItems] = useState<any[]>([]);
+  const [backgroundPollCount, setBackgroundPollCount] = useState(0);
 
   const refreshingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -66,10 +67,16 @@ function SearchPageContent() {
 
       setResults(listings);
       setLoading(false);
-      if (listings.length > 0) stopTimer();
+      if (listings.length > 0 && !isRefreshing) stopTimer();
 
-      if (isRefreshing && !refreshingRef.current) { setRefreshing(true); refreshingRef.current = true; }
-      else if (!isRefreshing) { setRefreshing(false); refreshingRef.current = false; }
+      if (isRefreshing && !refreshingRef.current) { 
+        setRefreshing(true); 
+        refreshingRef.current = true; 
+      } else if (!isRefreshing) { 
+        setRefreshing(false); 
+        refreshingRef.current = false; 
+        setBackgroundPollCount(0); // Reset count once fresh
+      }
 
       return listings.length > 0;
     } catch { setLoading(false); return false; }
@@ -95,10 +102,20 @@ function SearchPageContent() {
   }, [results, pollCount, fetchResults, filters.q, loading]);
 
   useEffect(() => {
-    if (!refreshing || !results.length) return;
-    const t = setTimeout(() => fetchResults(), 6000);
+    // If not refreshing, or no results, or we've reached background poll limit, stop.
+    if (!refreshing || !results.length || backgroundPollCount >= 3) {
+      if (backgroundPollCount >= 3 && refreshing) {
+        setRefreshing(false);
+        refreshingRef.current = false;
+      }
+      return;
+    }
+    const t = setTimeout(() => {
+      setBackgroundPollCount(prev => prev + 1);
+      fetchResults();
+    }, 8000); // 8s interval for background updates
     return () => clearTimeout(t);
-  }, [refreshing, results, fetchResults]);
+  }, [refreshing, results.length, backgroundPollCount, fetchResults]);
 
   const isPolling = results.length === 0 && pollCount < 8 && !loading && filters.q.length >= 2;
   const isTimedOut = results.length === 0 && pollCount >= 8 && !loading;
@@ -135,37 +152,38 @@ function SearchPageContent() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Results header */}
         {displayQuery && !loading && (
-          <div className="flex flex-col gap-4 mb-6 animate-fade-in">
-            {/* Row 1: Count + Refresh */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
-                  {totalCount} <span className="text-masala-text-muted text-lg sm:text-xl font-medium">results for</span>
-                  <br className="sm:hidden" />
-                  <span className="text-masala-primary sm:ml-2">&ldquo;{displayQuery}&rdquo;</span>
+          <div className="mb-5 animate-fade-in">
+            {/* Count + query + refresh */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-masala-text-muted uppercase tracking-wider">
+                  {totalCount} results
+                </p>
+                <h1 className="text-lg sm:text-2xl font-black text-masala-text leading-tight truncate" style={{ fontFamily: 'Fraunces, serif' }}>
+                  &ldquo;{displayQuery}&rdquo;
                 </h1>
               </div>
-              
+
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
                 title="Refresh Prices"
-                className={`p-2.5 rounded-xl border border-masala-border bg-white text-masala-text shadow-sm hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 ${refreshing ? 'opacity-50' : ''}`}
+                className={`flex-shrink-0 w-11 h-11 rounded-2xl border border-masala-border bg-white text-masala-text shadow-sm flex items-center justify-center hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin text-masala-primary' : ''}`} />
+                <RefreshCw className={`h-4.5 w-4.5 ${refreshing ? 'animate-spin text-masala-primary' : ''}`} style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
 
-            {/* Row 2: Sort + Filters (Compact) */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-              <div className="flex items-center gap-1 bg-white border border-masala-border rounded-xl p-1 shadow-sm flex-shrink-0">
+            {/* Sort tabs + Filter button */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center bg-white border border-masala-border rounded-2xl p-1 gap-0.5 shadow-sm flex-shrink-0">
                 {SORT_TABS.map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setFilters({ sort: tab.id })}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                    className={`px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide transition-all whitespace-nowrap min-h-[36px] ${
                       filters.sort === tab.id
-                        ? 'bg-masala-primary text-white'
+                        ? 'bg-masala-primary text-white shadow-sm'
                         : 'text-masala-text-muted hover:text-masala-text'
                     }`}
                   >
@@ -176,12 +194,16 @@ function SearchPageContent() {
 
               <button
                 onClick={() => setFilterOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-masala-border rounded-xl text-[12px] font-bold text-masala-text shadow-sm hover:border-masala-primary transition-all whitespace-nowrap active:scale-95"
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl border min-h-[36px] text-[12px] font-bold whitespace-nowrap flex-shrink-0 shadow-sm transition-all active:scale-95 ${
+                  activeFilterCount > 0
+                    ? 'bg-masala-primary text-white border-masala-primary'
+                    : 'bg-white border-masala-border text-masala-text hover:border-masala-primary'
+                }`}
               >
-                <SlidersHorizontal className="h-4 w-4 text-masala-primary" />
+                <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-white text-masala-primary text-[10px] font-black flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
@@ -348,11 +370,11 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
           <Zap className="h-3 w-3" /> {elapsedSecs}s elapsed
         </span>
       </div>
-      <div className="w-full max-w-md space-y-3 px-4">
+      <div className="w-full max-w-md space-y-4 px-4">
         <div className="relative w-full h-2 bg-masala-border/30 rounded-full overflow-hidden">
           <div className="h-full bg-gradient-to-r from-masala-primary to-masala-accent rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {STORE_NAMES_DISPLAY.map((store, i) => {
             const isDone = elapsedSecs > (i + 1) * 4;
             const isActive = !isDone && elapsedSecs > i * 3;
@@ -386,11 +408,11 @@ function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void 
           No products for <span className="text-masala-primary font-bold">&quot;{query}&quot;</span>. Try a different search term.
         </p>
       </div>
-      <div className="flex gap-3 flex-wrap justify-center">
-        <button onClick={onRefresh} className="px-8 py-3.5 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary shadow-lg shadow-masala-primary/20 transition-all flex items-center gap-2 min-h-[48px]">
+      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto px-6 sm:px-0">
+        <button onClick={onRefresh} className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary shadow-lg shadow-masala-primary/20 transition-all flex items-center justify-center gap-2 min-h-[48px]">
           <RefreshCw className="h-4 w-4" /> Try Again
         </button>
-        <a href="/" className="px-8 py-3.5 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[48px] flex items-center">
+        <a href="/" className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[48px] flex items-center justify-center">
           Browse Categories
         </a>
       </div>

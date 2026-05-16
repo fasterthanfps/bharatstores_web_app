@@ -44,6 +44,14 @@ const de: Record<string, string> = {
   // Popular
   'popular.title': 'Trending heute',
 
+  // Footer
+  'footer.tagline': 'Dein ultimativer Preisvergleich für indische Lebensmittel in Deutschland. Wir helfen dir, die besten Angebote für deine Lieblingsprodukte zu finden.',
+  'footer.partnerShops': 'Partner-Shops',
+  'footer.legal': 'Rechtliches',
+  'footer.imprint': 'Impressum',
+  'footer.privacy': 'Datenschutz',
+  'footer.designedWith': 'Designed mit',
+
   // Legacy keys used by existing components
   'blog': 'Blog',
   'priceAlert': 'Preisalarm',

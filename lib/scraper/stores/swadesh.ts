@@ -36,6 +36,13 @@ export class SwadeshScraper extends BaseScraper {
                         const price = parseFloat(priceStr) / 100;
                         
                         const weightGrams = this.parseWeightToGrams(name);
+                        // Availability check: is_in_stock boolean, plus add_to_cart text fallback
+                        // In WC Store API, 'Read more' usually means out of stock/non-purchasable
+                        const isOutOfStock = 
+                            item.is_in_stock === false || 
+                            item.add_to_cart?.text?.toLowerCase().includes('read more') ||
+                            item.add_to_cart?.text?.toLowerCase().includes('out of stock');
+
                         listings.push({
                             storeName: this.storeName,
                             storeId: this.storeId,
@@ -43,7 +50,7 @@ export class SwadeshScraper extends BaseScraper {
                             name,
                             price: isNaN(price) ? 0 : price,
                             imageUrl: item.images?.[0]?.src || '',
-                            availability: item.is_in_stock !== false ? 'IN_STOCK' : 'OUT_OF_STOCK',
+                            availability: isOutOfStock ? 'OUT_OF_STOCK' : 'IN_STOCK',
                             weightLabel: this.extractWeightLabel(name),
                             weightGrams,
                             pricePerKg: this.computePricePerKg(price, weightGrams),
@@ -99,7 +106,7 @@ export class SwadeshScraper extends BaseScraper {
             if (priceMatch) {
                 const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
                 const imgSrc = $('.woocommerce-product-gallery__image img').first().attr('src') || '';
-                const outOfStock = $('.out-of-stock').length > 0;
+                const outOfStock = $('.out-of-stock').length > 0 || $('.stock').text().toLowerCase().includes('out of stock');
                 const weightGrams = this.parseWeightToGrams(singleTitle);
 
                 listings.push({
@@ -137,7 +144,11 @@ export class SwadeshScraper extends BaseScraper {
                 const href = $el.find('a.woocommerce-LoopProduct-link, a').first().attr('href') || '';
                 const imgSrc = $el.find('img').first().attr('src') || $el.find('img').first().attr('data-src') || '';
 
-                const outOfStock = $el.find('[class*="out-of-stock"]').length > 0;
+                const outOfStock = 
+                    $el.find('[class*="out-of-stock"]').length > 0 || 
+                    $el.text().toLowerCase().includes('out of stock') ||
+                    $el.find('.add_to_cart_button').text().toLowerCase().includes('read more');
+
                 const weightGrams = this.parseWeightToGrams(name);
 
                 listings.push({

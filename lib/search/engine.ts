@@ -131,6 +131,74 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     return 0;
 }
 
+export interface GroupedListing {
+    id: string; // product_id
+    product_name: string;
+    product_slug: string;
+    product_category: string;
+    image_url: string;
+    _score: number;
+    bestPrice: number;
+    bestStore: string;
+    allPrices: {
+        id: string;
+        store_name: string;
+        price: number;
+        availability: string;
+        product_url: string;
+        image_url: string | null;
+        weight_label: string | null;
+        price_per_kg: number | null;
+    }[];
+}
+
+export function groupListingsByProduct(listings: any[], queryLower: string, synonyms: string[], priceCol: string): GroupedListing[] {
+    const scored = listings.map(l => ({ ...l, _score: scoreRelevance(l, queryLower, synonyms) }));
+    const productGroups = new Map<string, any[]>();
+
+    for (const l of scored) {
+        const key = l.product_id || l.product_slug || l.id;
+        if (!productGroups.has(key)) productGroups.set(key, []);
+        productGroups.get(key)!.push(l);
+    }
+
+    return Array.from(productGroups.values()).map(group => {
+        // Sort group by price to find best
+        const sortedGroup = group.sort((a, b) => {
+            const pa = Number(a[priceCol] ?? 0);
+            const pb = Number(b[priceCol] ?? 0);
+            if (pa === 0) return 1;
+            if (pb === 0) return -1;
+            return pa - pb;
+        });
+
+        const best = sortedGroup[0];
+        return {
+            id: best.product_id || best.id,
+            product_name: best.product_name,
+            product_slug: best.product_slug,
+            product_category: best.product_category,
+            image_url: best.image_url,
+            _score: best._score,
+            bestPrice: Number(best.price),
+            bestStore: best.store_name,
+            allPrices: sortedGroup.map(l => ({
+                id: l.id,
+                store_name: l.store_name,
+                price: Number(l.price),
+                availability: l.availability,
+                product_url: l.product_url,
+                image_url: l.image_url,
+                weight_label: l.weight_label,
+                price_per_kg: l.price_per_kg ? Number(l.price_per_kg) : null,
+            }))
+        };
+    }).sort((a, b) => {
+        if (b._score !== a._score) return b._score - a._score;
+        return a.bestPrice - b.bestPrice;
+    });
+}
+
 export function sortByRelevance(listings: any[], queryLower: string, synonyms: string[], priceCol: string): any[] {
     return listings
         .map(l => ({ ...l, _score: scoreRelevance(l, queryLower, synonyms) }))
@@ -152,8 +220,8 @@ export function sortByRelevance(listings: any[], queryLower: string, synonyms: s
 
 export function splitExactVsRelated(scored: any[]) {
     // Threshold: 80+ = Exact match section, below = Related products
-    const exact = scored.filter(l => l._score >= 80);
-    const related = scored.filter(l => l._score < 80 && l._score > 0);
+    const exact = scored.filter(l => (l._score ?? 0) >= 80);
+    const related = scored.filter(l => (l._score ?? 0) < 80 && (l._score ?? 0) > 0);
     return { exact, related };
 }
 

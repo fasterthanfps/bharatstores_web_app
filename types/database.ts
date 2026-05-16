@@ -68,6 +68,8 @@ export type Database = {
                     price: number
                     price_per_kg: number | null
                     product_id: string | null
+                    product_name: string | null
+                    product_category: string | null
                     product_url: string
                     store_id: string | null
                     store_name: string
@@ -86,6 +88,8 @@ export type Database = {
                     price: number
                     price_per_kg?: number | null
                     product_id?: string | null
+                    product_name?: string | null
+                    product_category?: string | null
                     product_url: string
                     store_id?: string | null
                     store_name: string
@@ -104,6 +108,8 @@ export type Database = {
                     price?: number
                     price_per_kg?: number | null
                     product_id?: string | null
+                    product_name?: string | null
+                    product_category?: string | null
                     product_url?: string
                     store_id?: string | null
                     store_name?: string
@@ -126,6 +132,77 @@ export type Database = {
                         referencedRelation: "stores"
                         referencedColumns: ["id"]
                     },
+                ]
+            }
+            product_deals: {
+                Row: {
+                    avg_price_7d: number
+                    category: string
+                    created_at: string | null
+                    current_price: number
+                    discount_percent: number
+                    id: string
+                    image_url: string | null
+                    in_stock: boolean | null
+                    last_updated: string | null
+                    listing_id: string | null
+                    price_per_kg: number | null
+                    product_id: string | null
+                    product_name: string
+                    savings_amount: number
+                    store_name: string
+                    store_slug: string
+                    url: string
+                    weight: string | null
+                }
+                Insert: {
+                    avg_price_7d: number
+                    category: string
+                    created_at?: string | null
+                    current_price: number
+                    discount_percent: number
+                    id?: string
+                    image_url?: string | null
+                    in_stock?: boolean | null
+                    last_updated?: string | null
+                    listing_id?: string | null
+                    price_per_kg?: number | null
+                    product_id?: string | null
+                    product_name: string
+                    savings_amount: number
+                    store_name: string
+                    store_slug: string
+                    url: string
+                    weight?: string | null
+                }
+                Update: {
+                    avg_price_7d?: number
+                    category?: string
+                    created_at?: string | null
+                    current_price?: number
+                    discount_percent?: number
+                    id?: string
+                    image_url?: string | null
+                    in_stock?: boolean | null
+                    last_updated?: string | null
+                    listing_id?: string | null
+                    price_per_kg?: number | null
+                    product_id?: string | null
+                    product_name?: string
+                    savings_amount?: number
+                    store_name?: string
+                    store_slug?: string
+                    url?: string
+                    weight?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "product_deals_listing_id_fkey"
+                        columns: ["listing_id"]
+                        isOneToOne: true
+                        referencedRelation: "listings"
+                        referencedColumns: ["id"]
+                    }
                 ]
             }
             price_alerts: {

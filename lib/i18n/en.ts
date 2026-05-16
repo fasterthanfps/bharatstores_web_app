@@ -44,6 +44,14 @@ const en: Record<string, string> = {
   // Popular
   'popular.title': 'Trending Today',
 
+  // Footer
+  'footer.tagline': 'Your ultimate price comparison for Indian groceries in Germany. We help you find the best deals on your favorite products.',
+  'footer.partnerShops': 'Partner Shops',
+  'footer.legal': 'Legal',
+  'footer.imprint': 'Imprint',
+  'footer.privacy': 'Privacy Policy',
+  'footer.designedWith': 'Designed with',
+
   // Legacy keys used by existing components
   'blog': 'Blog',
   'priceAlert': 'Price Alerts',
