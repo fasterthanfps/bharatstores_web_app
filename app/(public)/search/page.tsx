@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SearchAutocomplete from '@/components/search/SearchAutocomplete';
 import ProductCard from '@/components/ui/ProductCard';
 import { ProductCardSkeleton } from '@/components/ui/ProductCardSkeleton';
 import CompareTray from '@/components/ui/CompareTray';

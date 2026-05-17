@@ -5,7 +5,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Search } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Logo from '@/components/ui/Logo';
-import SearchAutocomplete from '@/components/search/SearchAutocomplete';
+import SearchBar from '@/components/SearchBar';
 import { useLang } from '@/lib/utils/LanguageContext';
 import { useSmartCart } from '@/stores/useSmartCart';
 import dynamic from 'next/dynamic';
@@ -87,7 +87,7 @@ export default function Header() {
           {/* Desktop search - Hide on homepage to avoid duplication with Hero search */}
           {!isHome ? (
             <div className="hidden md:block flex-1 max-w-3xl mx-8 lg:mx-16">
-              <SearchAutocomplete size="header" />
+              <SearchBar size="header" initialQuery={currentQ} />
             </div>
           ) : (
             <div className="hidden md:block flex-1" />
