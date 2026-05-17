@@ -45,7 +45,7 @@ const en: Record<string, string> = {
   'popular.title': 'Trending Today',
 
   // Footer
-  'footer.tagline': 'Your ultimate price comparison for Indian groceries in Germany. We help you find the best deals on your favorite products.',
+  'footer.tagline': 'Your ultimate price comparison for Indian groceries in Europe. We help you find the best deals on your favorite products.',
   'footer.partnerShops': 'Partner Shops',
   'footer.legal': 'Legal',
   'footer.imprint': 'Imprint',

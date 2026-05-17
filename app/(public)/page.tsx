@@ -6,8 +6,8 @@ import HeroParticles from '@/components/home/HeroParticles';
 import HeroFloatingBadges from '@/components/home/HeroFloatingBadges';
 
 export const metadata: Metadata = {
-  title: 'BharatStores.eu – Indian Grocery Price Comparison in Germany & Europe',
-  description: 'Compare real-time prices for 5,000+ Indian grocery products across all major stores. Smart, fast, and 100% free.',
+  title: 'BharatStores.eu – Indian Grocery Price Comparison in Europe',
+  description: 'Compare real-time prices for 5,000+ Indian grocery products across all major stores in Europe. Smart, fast, and 100% free.',
 };
 
 export const revalidate = 3600; // Re-fetch data every hour
@@ -45,7 +45,7 @@ export default async function Home() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-masala-primary" />
             </span>
             <span className="text-[11px] font-black uppercase tracking-widest text-masala-primary">
-              Live Grocery Comparison · 8 Indian Stores in Germany
+              Live Grocery Comparison · Indian Stores in Europe
             </span>
           </div>
 
@@ -56,14 +56,14 @@ export default async function Home() {
           >
             Find the Best <br />
             <span className="text-masala-primary italic underline decoration-masala-primary/20 underline-offset-8">
-              Indian Prices.
+              Prices in Europe.
             </span>
           </h1>
 
           {/* Sub-headline */}
           <p className="text-lg sm:text-2xl text-masala-text-muted mb-12 max-w-2xl mx-auto leading-relaxed animate-slide-up animation-delay-200">
             Compare 5,000+ products across Dookan, Jamoona, Swadesh, and more.{' '}
-            <strong className="text-masala-primary font-semibold">Save up to 40%</strong> on every grocery run.
+            <strong className="text-masala-primary font-semibold">Save up to 40%</strong> on every grocery run in Europe.
           </p>
 
           {/* Search */}

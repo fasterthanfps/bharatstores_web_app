@@ -45,7 +45,7 @@ const de: Record<string, string> = {
   'popular.title': 'Trending heute',
 
   // Footer
-  'footer.tagline': 'Dein ultimativer Preisvergleich für indische Lebensmittel in Deutschland. Wir helfen dir, die besten Angebote für deine Lieblingsprodukte zu finden.',
+  'footer.tagline': 'Dein ultimativer Preisvergleich für indische Lebensmittel in Europa. Wir helfen dir, die besten Angebote für deine Lieblingsprodukte zu finden.',
   'footer.partnerShops': 'Partner-Shops',
   'footer.legal': 'Rechtliches',
   'footer.imprint': 'Impressum',

@@ -20,11 +20,11 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: 'BharatStores.eu – Indian Grocery Price Comparison in Germany',
+    default: 'BharatStores.eu – Indian Grocery Price Comparison in Europe',
     template: '%s | BharatStores.eu',
   },
   description:
-    'Compare real-time prices for 5,000+ Indian grocery products across all major online shops in Germany and Europe. Smart, fast, and 100% free.',
+    'Compare real-time prices for 5,000+ Indian grocery products across all major online shops in Europe. Smart, fast, and 100% free.',
   keywords: [
     'Indian groceries',
     'price comparison',

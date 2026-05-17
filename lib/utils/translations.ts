@@ -57,7 +57,7 @@ export const translations = {
     // Features
     whyTitle: 'Why',
     feature1Title: 'Best Price Finder',
-    feature1Desc: 'We compare all major Indian stores in Germany and show you the best price.',
+    feature1Desc: 'We compare all major Indian stores in Europe and show you the best price.',
     feature2Title: 'Always Fresh',
     feature2Desc: 'Prices auto-update every 6 hours – you always see today\'s prices.',
     feature3Title: 'Free & Transparent',
@@ -125,7 +125,7 @@ export const translations = {
     // Features
     whyTitle: 'Warum',
     feature1Title: 'Günstigsten Preis finden',
-    feature1Desc: 'Wir vergleichen alle großen deutschen Indienläden und zeigen dir den besten Preis.',
+    feature1Desc: 'Wir vergleichen alle großen indischen Webshops in Europa und zeigen dir den besten Preis.',
     feature2Title: 'Immer aktuell',
     feature2Desc: 'Preise werden alle 6 Stunden automatisch aktualisiert – du siehst immer tagesaktuelle Preise.',
     feature3Title: 'Kostenlos & transparent',
