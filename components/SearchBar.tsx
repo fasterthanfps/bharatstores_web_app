@@ -122,10 +122,12 @@ export default function SearchBar({
     <div ref={wrapperRef} className="relative w-full">
 
       {/* Input row */}
-      <div className={`relative flex items-center bg-white rounded-2xl border-2 transition-all duration-200 ${
-        open ? 'border-masala-primary shadow-xl shadow-masala-primary/10' : 'border-masala-border shadow-sm hover:border-masala-primary/40'
+      <div className={`relative flex items-center bg-white transition-all duration-300 ${
+        isHero 
+          ? `rounded-full border-2 ${open ? 'border-masala-primary ring-[5px] ring-masala-primary/10 shadow-xl shadow-masala-primary/5' : 'border-masala-border hover:border-masala-primary/30 shadow-md'}`
+          : `rounded-2xl border-2 ${open ? 'border-masala-primary ring-[4px] ring-masala-primary/10 shadow-lg shadow-masala-primary/5' : 'border-masala-border hover:border-masala-primary/30 shadow-sm'}`
       }`}>
-        <Search className={`absolute left-4 transition-colors ${open ? 'text-masala-primary' : 'text-masala-text-muted'} ${isHero ? 'w-5 h-5' : 'w-4 h-4'}`} />
+        <Search className={`absolute transition-colors ${open ? 'text-masala-primary' : 'text-masala-text-muted'} ${isHero ? 'left-5 w-5 h-5' : 'left-4 w-4 h-4'}`} />
 
         <input
           ref={inputRef}
@@ -141,8 +143,8 @@ export default function SearchBar({
           spellCheck={false}
           inputMode="search"
           enterKeyHint="search"
-          className={`w-full bg-transparent border-none outline-none ring-0 focus:ring-0 text-masala-text placeholder:text-masala-text-muted/60 font-medium ${
-            isHero ? 'h-14 pl-12 pr-40 text-base' : 'h-11 pl-10 pr-32 text-[15px]'
+          className={`w-full bg-transparent border-none outline-none ring-0 focus:ring-0 text-masala-text placeholder:text-masala-text-muted/50 font-semibold tracking-wide ${
+            isHero ? 'h-14 pl-14 pr-44 text-[16px]' : 'h-11 pl-11 pr-32 text-[14px]'
           }`}
         />
 
@@ -150,7 +152,7 @@ export default function SearchBar({
           <button type="button"
             onMouseDown={e => { e.preventDefault(); setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
             onTouchEnd={e => { e.preventDefault(); setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
-            className="absolute right-[124px] p-2 text-masala-text-muted hover:text-masala-text transition-colors">
+            className={`absolute p-2 text-masala-text-muted hover:text-masala-text transition-colors ${isHero ? 'right-36' : 'right-28'}`}>
             <X className="w-4 h-4" />
           </button>
         )}
@@ -158,9 +160,10 @@ export default function SearchBar({
         <button type="button"
           onMouseDown={e => { e.preventDefault(); submit(query); }}
           onTouchEnd={e => { e.preventDefault(); submit(query); }}
-          className={`absolute right-2 bg-masala-primary text-white font-black uppercase tracking-wide rounded-xl hover:bg-masala-secondary active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm ${
-            isHero ? 'h-11 px-6 sm:px-8 text-xs' : 'h-8 px-4 sm:px-5 text-[11px]'
-          }`}>
+          className={`absolute right-2 bg-masala-primary text-white font-black uppercase tracking-wider hover:bg-masala-secondary active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm ${
+            isHero ? 'text-xs rounded-full' : 'text-[10px] rounded-xl'
+          }`}
+          style={{ height: isHero ? '44px' : '32px', paddingLeft: isHero ? '28px' : '18px', paddingRight: isHero ? '28px' : '18px' }}>
           <Search className="w-4 h-4 sm:hidden" />
           <span className="hidden sm:inline">Search</span>
         </button>
