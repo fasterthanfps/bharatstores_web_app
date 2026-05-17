@@ -382,14 +382,7 @@ a, button {
   animation: fadeIn 0.2s ease forwards;
 }
 
-/* ── Search Bar Focus Ring ───────────────────────────────────────────────────── */
-@keyframes focusRing {
-  from { box-shadow: 0 0 0 0 rgba(139, 32, 32, 0.4); }
-  to   { box-shadow: 0 0 0 4px rgba(139, 32, 32, 0.12); }
-}
-input:focus {
-  animation: focusRing 0.2s ease forwards;
-}
+
 
 /* ── Mobile Typography ──────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
