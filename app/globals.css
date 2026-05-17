@@ -396,3 +396,170 @@ input:focus {
   h1 { font-size: 2.25rem !important; line-height: 1.2 !important; }
   h2 { font-size: 1.5rem !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HERO SECTION  –  visual system
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero background gradient ── */
+.hero-bg-gradient {
+  background: linear-gradient(
+    160deg,
+    #fff9f4 0%,
+    #fff4ec 25%,
+    #fff7f0 50%,
+    #fef6ee 75%,
+    #fdf5f0 100%
+  );
+}
+
+/* ── Subtle dot grid (layered on top of bg) ── */
+.hero-dot-grid {
+  background-image: radial-gradient(circle, rgba(139, 32, 32, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Ambient glow orbs ── */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-orb--primary {
+  width: 55%;
+  height: 70%;
+  top: -20%;
+  left: -10%;
+  background: radial-gradient(ellipse, rgba(139, 32, 32, 0.09) 0%, transparent 70%);
+  animation: orbDrift 18s ease-in-out infinite alternate;
+}
+.hero-orb--accent {
+  width: 45%;
+  height: 60%;
+  bottom: -15%;
+  right: -8%;
+  background: radial-gradient(ellipse, rgba(200, 75, 49, 0.07) 0%, transparent 70%);
+  animation: orbDrift 22s ease-in-out infinite alternate-reverse;
+}
+.hero-orb--warm {
+  width: 30%;
+  height: 40%;
+  top: 30%;
+  left: 38%;
+  background: radial-gradient(ellipse, rgba(255, 180, 80, 0.06) 0%, transparent 70%);
+  animation: orbDrift 14s ease-in-out infinite alternate;
+}
+
+@keyframes orbDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(20px, -15px) scale(1.05); }
+  66%  { transform: translate(-10px, 20px) scale(0.97); }
+  100% { transform: translate(10px, -10px) scale(1.03); }
+}
+
+/* ── Trust pill badges ── */
+.hero-trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-masala-text-muted);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(232, 224, 212, 0.8);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hero-trust-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 32, 32, 0.08);
+}
+
+/* ── Stat hover ── */
+.hero-stat {
+  transition: transform 0.2s ease;
+}
+.hero-stat:hover {
+  transform: scale(1.08);
+}
+
+/* ── Floating deal badges ── */
+.hero-deal-badge {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(232, 224, 212, 0.9);
+  box-shadow:
+    0 4px 20px rgba(139, 32, 32, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  z-index: 1;
+  animation: badgeFloat 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             badgeBob 4s ease-in-out 0.7s infinite;
+  /* hide on small screens so they don't overlap content */
+  display: none;
+}
+@media (min-width: 900px) {
+  .hero-deal-badge { display: flex; }
+}
+
+.hero-deal-badge__store {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-masala-primary);
+}
+.hero-deal-badge__product {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-masala-text);
+  white-space: nowrap;
+}
+.hero-deal-badge__prices {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-deal-badge__old {
+  font-size: 11px;
+  color: var(--color-masala-text-muted);
+  text-decoration: line-through;
+}
+.hero-deal-badge__now {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-masala-primary);
+}
+.hero-deal-badge__save {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-masala-success);
+  background: var(--color-masala-success-bg);
+  padding: 2px 7px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+@keyframes badgeFloat {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+@keyframes badgeBob {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+

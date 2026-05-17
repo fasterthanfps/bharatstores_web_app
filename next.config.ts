@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
   experimental: {
     // Increase timeout for scraper routes
   },
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,47 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getSuggestions } from '@/lib/search/suggest';
-import type { Suggestion } from '@/lib/types';
 
-export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get('q') ?? '';
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const q = searchParams.get('q')?.trim() ?? '';
 
-  if (!q || q.trim().length < 2) {
-    return NextResponse.json({ suggestions: [] as Suggestion[] }, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
-    });
+  if (q.length < 2) {
+    return NextResponse.json({ suggestions: [] });
   }
+
+  const normalized = q.toLowerCase().replace(/\s+/g, ' ');
 
   try {
     const supabase = await createClient();
-
-    // Fetch a broad set of recent listings to build suggestions from
-    const { data: listings } = await supabase
-      .from('listings')
+    
+    // Fetch products matching the query that have at least one in-stock listing
+    const { data: products, error } = await supabase
+      .from('products')
       .select(`
         id,
-        store_name,
-        price,
-        products ( name, category )
+        name,
+        category,
+        brand,
+        image_url,
+        listings!inner (
+          price,
+          availability
+        )
       `)
-      .not('price', 'is', null)
-      .order('last_scraped_at', { ascending: false })
-      .limit(600);
+      .or(`name.ilike.%${normalized}%,brand.ilike.%${normalized}%`)
+      .eq('listings.availability', 'IN_STOCK')
+      .limit(50);
 
-    const flat = (listings ?? []).map((l: any) => ({
-      product_name: l.products?.name ?? '',
-      product_category: l.products?.category ?? 'general',
-      store_name: l.store_name ?? '',
-      price: l.price ?? 0,
-    }));
+    if (error) {
+      console.error('Suggest API error fetching products:', error);
+      return NextResponse.json({ suggestions: [] });
+    }
 
-    const suggestions: Suggestion[] = getSuggestions(q, flat);
+    if (!products) {
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    // Process and shape products
+    const processed = products.map((p: any) => {
+      const inStockListings = p.listings.filter((l: any) => l.availability === 'IN_STOCK');
+      const storeCount = inStockListings.length;
+      const bestPrice = inStockListings.length > 0 
+        ? Math.min(...inStockListings.map((l: any) => Number(l.price))) 
+        : null;
+
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        brand: p.brand,
+        imageUrl: p.image_url,
+        storeCount,
+        bestPrice,
+      };
+    });
+
+    // Deduplicate, sort prefix matches first, then by storeCount desc
+    const seen = new Set<string>();
+    const suggestions = [];
+
+    const sorted = processed.sort((a, b) => {
+      const aPrefix = a.name.toLowerCase().startsWith(normalized);
+      const bPrefix = b.name.toLowerCase().startsWith(normalized);
+      if (aPrefix && !bPrefix) return -1;
+      if (!aPrefix && bPrefix) return 1;
+      return b.storeCount - a.storeCount;
+    });
+
+    for (const p of sorted) {
+      const key = p.name.toLowerCase().trim();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      suggestions.push({
+        productId: p.id,
+        term: p.name,
+        category: p.category,
+        brand: p.brand,
+        imageUrl: p.imageUrl,
+        storeCount: p.storeCount,
+        bestPrice: p.bestPrice,
+      });
+      if (suggestions.length >= 6) break;
+    }
 
     return NextResponse.json({ suggestions }, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
-  } catch (err: any) {
-    console.error('[suggest] Error:', err?.message);
-    return NextResponse.json({ suggestions: [] as Suggestion[] });
+  } catch (error) {
+    console.error('Suggest API error:', error);
+    return NextResponse.json({ suggestions: [] }, { status: 500 });
   }
 }

@@ -35,7 +35,6 @@ function triggerBackgroundScrape(query: string, sortCol: string) {
     })();
 }
 
-// ── GET handler ────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
     const query = req.nextUrl.searchParams.get('q')?.trim();
     const sort = req.nextUrl.searchParams.get('sort') ?? 'price';

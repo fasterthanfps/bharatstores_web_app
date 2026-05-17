@@ -95,6 +95,13 @@ export default function Header() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-2">
+            <Link href="/deals"
+              className="relative flex items-center gap-1.5 text-sm font-bold text-masala-primary hover:text-masala-secondary transition-colors mr-2">
+              🏷️ Deals
+              <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                NEW
+              </span>
+            </Link>
             {[
               { href: '/blog', label: t('nav.blog') },
               { href: '/alerts', label: t('nav.priceAlert') },
