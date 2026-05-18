@@ -41,7 +41,6 @@ export default function SearchBar({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const touchRef = useRef(false);
   const router = useRouter();
   const debouncedQ = useDebounce(query, 220);
   const isHero = size === 'hero';
@@ -104,6 +103,7 @@ export default function SearchBar({
     setOpen(false);
     setSuggestions([]);
     setQuery(term);
+    window.dispatchEvent(new Event('nav-start'));
     router.push(`/search?q=${encodeURIComponent(term)}`);
   }, [router, saveRecent]);
 
@@ -150,16 +150,16 @@ export default function SearchBar({
 
         {query && (
           <button type="button"
-            onMouseDown={e => { e.preventDefault(); setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
-            onTouchEnd={e => { e.preventDefault(); setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
+            onMouseDown={e => e.preventDefault()}
+            onClick={() => { setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
             className={`absolute p-2 text-masala-text-muted hover:text-masala-text transition-colors ${isHero ? 'right-36' : 'right-28'}`}>
             <X className="w-4 h-4" />
           </button>
         )}
 
         <button type="button"
-          onMouseDown={e => { e.preventDefault(); submit(query); }}
-          onTouchEnd={e => { e.preventDefault(); submit(query); }}
+          onMouseDown={e => e.preventDefault()}
+          onClick={() => submit(query)}
           className={`absolute right-2 bg-masala-primary text-white font-black uppercase tracking-wider hover:bg-masala-secondary active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm ${
             isHero ? 'text-xs rounded-full' : 'text-[10px] rounded-xl'
           }`}
@@ -174,8 +174,6 @@ export default function SearchBar({
         <div
           className="absolute left-0 right-0 top-full mt-2 z-[999] bg-white rounded-2xl shadow-2xl border border-masala-border overflow-hidden"
           onMouseDown={e => e.stopPropagation()}
-          onTouchStart={e => { touchRef.current = true; e.stopPropagation(); }}
-          onTouchEnd={() => setTimeout(() => { touchRef.current = false; }, 400)}
         >
 
           {/* Suggestions */}
@@ -203,8 +201,8 @@ export default function SearchBar({
                   </p>
                   {suggestions.map((s, i) => (
                     <button key={s.productId} type="button"
-                      onMouseDown={e => { e.preventDefault(); submit(s.term); }}
-                      onTouchEnd={e => { e.preventDefault(); submit(s.term); }}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => submit(s.term)}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${activeIdx === i ? 'bg-masala-muted' : 'hover:bg-masala-muted/70'}`}>
                       <div className="w-9 h-9 rounded-xl bg-masala-muted/60 flex-shrink-0 overflow-hidden">
                         {s.imageUrl
@@ -230,8 +228,8 @@ export default function SearchBar({
                     </button>
                   ))}
                   <button
-                    onMouseDown={e => { e.preventDefault(); submit(query); }}
-                    onTouchEnd={e => { e.preventDefault(); submit(query); }}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => submit(query)}
                     className="w-full flex items-center justify-between px-4 py-3 border-t border-masala-border hover:bg-masala-muted/50 transition-colors">
                     <span className="text-sm font-bold text-masala-primary">See all results for "{query.trim()}"</span>
                     <ChevronRight className="w-4 h-4 text-masala-primary" />
@@ -260,14 +258,16 @@ export default function SearchBar({
                     <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-masala-text-muted">
                       <Clock className="w-3 h-3" /> Recent
                     </p>
-                    <button onMouseDown={e => { e.preventDefault(); localStorage.removeItem('bs-recent'); setRecent([]); }}
+                    <button 
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => { localStorage.removeItem('bs-recent'); setRecent([]); }}
                       className="text-[10px] text-masala-text-muted hover:text-red-500">Clear</button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {recent.map(term => (
                       <button key={term}
-                        onMouseDown={e => { e.preventDefault(); submit(term); }}
-                        onTouchEnd={e => { e.preventDefault(); submit(term); }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => submit(term)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-masala-muted text-[12px] font-medium text-masala-text hover:bg-masala-primary hover:text-white transition-all">
                         <Clock className="w-3 h-3 opacity-60" />{term}
                       </button>
@@ -282,8 +282,8 @@ export default function SearchBar({
                 <div className="flex flex-wrap gap-2">
                   {popular.map((term, i) => (
                     <button key={term}
-                      onMouseDown={e => { e.preventDefault(); submit(term); }}
-                      onTouchEnd={e => { e.preventDefault(); submit(term); }}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => submit(term)}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-masala-border text-[12px] font-semibold text-masala-text hover:bg-masala-primary hover:text-white hover:border-masala-primary transition-all">
                       {i < 3 && (
                         <span className="w-4 h-4 rounded-full bg-masala-primary text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">

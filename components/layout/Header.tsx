@@ -54,6 +54,7 @@ export default function Header() {
     e.preventDefault();
     const q = mobileSearchQuery.trim();
     if (q.length >= 2) {
+      window.dispatchEvent(new Event('nav-start'));
       router.push(`/search?q=${encodeURIComponent(q)}`);
       mobileInputRef.current?.blur();
     }

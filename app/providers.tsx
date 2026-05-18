@@ -1,10 +1,11 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { LanguageProvider } from '@/lib/utils/LanguageContext';
 import { ComparisonProvider } from '@/context/ComparisonContext';
 import ComparisonTray from '@/components/comparison/ComparisonTray';
+import GlobalLoader from '@/components/layout/GlobalLoader';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(
@@ -23,6 +24,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
             <LanguageProvider>
                 <ComparisonProvider>
+                    <Suspense fallback={null}>
+                        <GlobalLoader />
+                    </Suspense>
                     {children}
                     <ComparisonTray />
                 </ComparisonProvider>

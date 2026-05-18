@@ -36,6 +36,62 @@ export const SYNONYM_MAP: Record<string, string[]> = {
     basmati: ['rice', 'chawal'],
 };
 
+type IntentProfile = {
+    keys: string[];
+    include: string[];
+    exclude: string[];
+};
+
+const INTENT_PROFILES: IntentProfile[] = [
+    {
+        keys: ['atta', 'aata', 'chapati flour'],
+        include: ['atta', 'aata', 'chapati flour', 'whole wheat flour', 'wheat flour'],
+        exclude: ['noodles', 'pasta', 'instant noodles', 'ramen']
+    },
+    {
+        keys: ['flour', 'wheat'],
+        include: ['flour', 'wheat', 'atta', 'aata', 'besan', 'maida', 'sooji', 'suji', 'rava', 'semolina'],
+        exclude: ['noodles', 'pasta', 'instant noodles', 'ramen']
+    },
+    {
+        keys: ['rice', 'basmati', 'chawal'],
+        include: ['rice', 'basmati', 'sona', 'chawal'],
+        exclude: ['noodle', 'flakes', 'pasta']
+    },
+    {
+        keys: ['dal', 'daal', 'lentil', 'pulses', 'toor', 'moong', 'masoor', 'chana', 'rajma'],
+        include: ['dal', 'lentil', 'toor', 'moong', 'masoor', 'chana', 'rajma'],
+        exclude: ['snack', 'mixture', 'chips']
+    },
+    {
+        keys: ['ghee', 'clarified butter'],
+        include: ['ghee', 'clarified butter'],
+        exclude: ['noodles', 'snack', 'masala mix']
+    },
+    {
+        keys: ['biscuit', 'cookie'],
+        include: ['biscuit', 'cookie', 'digestive', 'cream biscuit'],
+        exclude: ['flour', 'atta', 'dal', 'rice']
+    }
+];
+
+function getActiveIntentProfiles(queryLower: string, synonyms: string[]): IntentProfile[] {
+    const qTokens = new Set(queryLower.split(/\s+/).filter(Boolean));
+    const synText = synonyms.join(' ');
+    return INTENT_PROFILES.filter((p) =>
+        p.keys.some((k) => qTokens.has(k) || queryLower.includes(k) || synText.includes(k))
+    );
+}
+
+function hasTerm(text: string, term: string): boolean {
+    const normalized = text.toLowerCase();
+    const t = term.toLowerCase().trim();
+    if (!t) return false;
+    if (t.includes(' ')) return normalized.includes(t);
+    const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    return re.test(normalized);
+}
+
 import { smartTruncateQuery } from './normalize';
 
 // ── Relevance Scoring ─────────────────────────────────────────────────────────
@@ -47,6 +103,19 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     const name = (listing.product_name ?? listing.name ?? '').toLowerCase();
     const category = (listing.product_category ?? '').toLowerCase();
     const searchTerms = (listing.search_terms ?? []) as string[];
+    const text = `${name} ${category}`;
+    const activeIntentProfiles = getActiveIntentProfiles(queryLower, synonyms);
+    if (activeIntentProfiles.length > 0) {
+        let includeHit = 0;
+        let excludeHit = 0;
+        for (const profile of activeIntentProfiles) {
+            // Intent should be driven by product name first, category second.
+            if (profile.include.some((t) => hasTerm(name, t)) || profile.include.some((t) => hasTerm(category, t))) includeHit++;
+            if (profile.exclude.some((t) => hasTerm(name, t))) excludeHit++;
+        }
+        if (excludeHit > 0 && includeHit === 0) return 2;
+        if (includeHit > 0 && excludeHit === 0) return 100 + Math.min(includeHit, 2);
+    }
 
     // Use a cleaned "core" query for smarter token matching
     const coreQuery = smartTruncateQuery(queryLower);
@@ -297,7 +366,7 @@ export async function saveAndReturnListings(
                 .replace(/\s*[|-]?\s*Details im shop/gi, '')
                 .trim();
 
-            const productCategory = inferCategory(cleanName, query);
+            const productCategory = inferCategory(cleanName);
             const slug = cleanName
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
@@ -360,20 +429,22 @@ export async function saveAndReturnListings(
     return allListings;
 }
 
-export function inferCategory(name: string, query: string): string {
-    const combined = (name + ' ' + query).toLowerCase();
-    if (/rice|chawal|basmati|sona/.test(combined)) return 'rice';
-    if (/atta|flour|besan|maida|sooji|suji/.test(combined)) return 'flour';
-    if (/dal|lentil|bean|chana|toor|moong|masoor|rajma/.test(combined)) return 'lentils';
-    if (/ghee|butter ghee/.test(combined)) return 'oil-ghee';
-    if (/oil|cooking oil/.test(combined)) return 'oil-ghee';
-    if (/spice|masala|turmeric|cumin|coriander|cardamom|pepper|chilli|haldi|jeera/.test(combined)) return 'spices';
-    if (/tea|chai|coffee/.test(combined)) return 'beverages';
-    if (/snack|namkeen|chips|biscuit|cookie/.test(combined)) return 'snacks';
-    if (/sweet|mithai|halwa|ladoo|barfi/.test(combined)) return 'sweets';
-    if (/pickle|chutney|achaar/.test(combined)) return 'condiments';
-    if (/paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi/.test(combined)) return 'dairy';
-    if (/lemon|lime|tomato|onion|potato|vegetable|fruit|nimbu|ginger|garlic/.test(combined)) return 'fresh-produce';
-    if (/frozen/.test(combined)) return 'frozen';
+export function inferCategory(name: string): string {
+    const combined = name.toLowerCase();
+    const hasWord = (regex: RegExp) => regex.test(combined);
+
+    if (hasWord(/\b(sweet|mithai|halwa|ladoo|barfi|pedha|rasgulla|gulab\s+jamun|kheer|dessert)\b/)) return 'sweets';
+    if (hasWord(/\b(paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi|cheese)\b/)) return 'dairy';
+    if (hasWord(/\b(rice|chawal|basmati|sona|sonamasoori|poha)\b/)) return 'rice';
+    if (hasWord(/\b(atta|aata|flour|besan|maida|sooji|suji|rava|semolina)\b/)) return 'flour';
+    if (hasWord(/\b(dal|lentil|bean|beans|chana|toor|moong|masoor|rajma|lobia|urad|kabuli)\b/)) return 'lentils';
+    if (hasWord(/\b(ghee|butter\s+ghee)\b/)) return 'oil-ghee';
+    if (hasWord(/\b(oil|cooking\s+oil|mustard\s+oil|coconut\s+oil|sunflower\s+oil)\b/)) return 'oil-ghee';
+    if (hasWord(/\b(spice|masala|turmeric|cumin|coriander|cardamom|pepper|chilli|haldi|jeera|rai|mustard\s+seeds|fennel|methi|fenugreek|hing|asafoetida|cinnamon|cloves|elaichi|ajwain)\b/)) return 'spices';
+    if (hasWord(/\b(tea|chai|coffee)\b/)) return 'beverages';
+    if (hasWord(/\b(snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|mix|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one)\b/)) return 'snacks';
+    if (hasWord(/\b(pickle|chutney|achaar|sauce|paste|ketchup|spread)\b/)) return 'condiments';
+    if (hasWord(/\b(lemon|lime|tomato|onion|potato|vegetable|fruit|nimbu|ginger|garlic)\b/)) return 'fresh-produce';
+    if (hasWord(/\b(frozen)\b/)) return 'frozen';
     return 'general';
 }

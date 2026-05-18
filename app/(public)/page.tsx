@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import HeroSearch from '@/components/search/HeroSearch';
-import CategoryGrid from '@/components/sections/CategoryGrid';
 import HowItWorks from '@/components/sections/HowItWorks';
+import CategoryGrid from '@/components/sections/CategoryGrid';
 import HeroParticles from '@/components/home/HeroParticles';
 import HeroFloatingBadges from '@/components/home/HeroFloatingBadges';
 

@@ -8,6 +8,11 @@ export interface SearchFilters {
   stores: string[];       // e.g. ['dookan', 'jamoona']
   minPrice: number;
   maxPrice: number;
+  priceMode: 'range' | 'below' | 'above';
+  quantity: string;
+  brands: string[];
+  types: string[];
+  sugar: string[];
   inStockOnly: boolean;
   sort: 'best' | 'price' | 'pricePerKg' | 'stock';
   page: number;
@@ -23,6 +28,11 @@ export function useSearchFilters() {
     stores: params.get('stores')?.split(',').filter(Boolean) ?? [],
     minPrice: Number(params.get('minPrice') ?? 0),
     maxPrice: Number(params.get('maxPrice') ?? 100),
+    priceMode: (params.get('priceMode') as SearchFilters['priceMode']) ?? 'range',
+    quantity: params.get('quantity') ?? '',
+    brands: params.get('brands')?.split(',').filter(Boolean) ?? [],
+    types: params.get('types')?.split(',').filter(Boolean) ?? [],
+    sugar: params.get('sugar')?.split(',').filter(Boolean) ?? [],
     inStockOnly: params.get('inStock') === 'true',
     sort: (params.get('sort') as SearchFilters['sort']) ?? 'best',
     page: Number(params.get('page') ?? 1),
@@ -46,6 +56,26 @@ export function useSearchFilters() {
     if (updates.inStockOnly !== undefined) {
       if (!updates.inStockOnly) next.delete('inStock');
       else next.set('inStock', 'true');
+    }
+    if (updates.priceMode !== undefined) {
+      if (updates.priceMode === 'range') next.delete('priceMode');
+      else next.set('priceMode', updates.priceMode);
+    }
+    if (updates.quantity !== undefined) {
+      if (!updates.quantity) next.delete('quantity');
+      else next.set('quantity', updates.quantity);
+    }
+    if (updates.brands !== undefined) {
+      if (updates.brands.length === 0) next.delete('brands');
+      else next.set('brands', updates.brands.join(','));
+    }
+    if (updates.types !== undefined) {
+      if (updates.types.length === 0) next.delete('types');
+      else next.set('types', updates.types.join(','));
+    }
+    if (updates.sugar !== undefined) {
+      if (updates.sugar.length === 0) next.delete('sugar');
+      else next.set('sugar', updates.sugar.join(','));
     }
     if (updates.sort !== undefined) {
       if (updates.sort === 'best') next.delete('sort');
@@ -74,7 +104,12 @@ export function useSearchFilters() {
     filters.stores.length +
     (filters.inStockOnly ? 1 : 0) +
     (filters.maxPrice < 100 ? 1 : 0) +
-    (filters.minPrice > 0 ? 1 : 0);
+    (filters.minPrice > 0 ? 1 : 0) +
+    (filters.quantity ? 1 : 0) +
+    filters.brands.length +
+    filters.types.length +
+    filters.sugar.length +
+    (filters.priceMode !== 'range' ? 1 : 0);
 
   const hasActiveFilters = activeFilterCount > 0;
 

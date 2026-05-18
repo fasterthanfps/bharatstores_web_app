@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import {
     SYNONYM_MAP,
-    sortByRelevance,
+    groupListingsByProduct,
     splitExactVsRelated,
     saveAndReturnListings
 } from '@/lib/search/engine';
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
     const queryLower = query.toLowerCase();
-    const sortCol = sort === 'price_per_kg' ? 'price_per_kg' : 'price';
+    const sortCol = sort === 'pricePerKg' || sort === 'price_per_kg' ? 'price_per_kg' : 'price';
     const synonyms = SYNONYM_MAP[queryLower] ?? [];
 
     console.log(`[Cache Refresh] Manual refresh triggered for "${query}"`);
@@ -67,15 +67,16 @@ export async function POST(req: NextRequest) {
                 return true;
             });
 
-            const scored = sortByRelevance(uniqueListings, queryLower, synonyms, sortCol);
-            const { exact, related } = splitExactVsRelated(scored);
+            // Group listings by product
+            const liveGrouped = groupListingsByProduct(uniqueListings, queryLower, synonyms, sortCol);
+            const { exact, related } = splitExactVsRelated(liveGrouped);
 
             console.log(`[Cache Refresh] Fresh scrape saved ${uniqueListings.length} listings for "${query}"`);
             
             return NextResponse.json({ 
                 success: true, 
                 data: { 
-                    listings: scored, 
+                    listings: liveGrouped, 
                     exactCount: exact.length, 
                     relatedCount: related.length,
                     fresh: true, 

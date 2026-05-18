@@ -52,6 +52,7 @@ export default function SearchBar({
         (q: string) => {
             const trimmed = q.trim();
             if (!trimmed) return;
+            window.dispatchEvent(new Event('nav-start'));
             router.push(`/search?q=${encodeURIComponent(trimmed)}`);
             setIsFocused(false);
         },

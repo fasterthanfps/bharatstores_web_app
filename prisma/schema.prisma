@@ -7,17 +7,22 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  name        String
-  slug        String   @unique
-  category    String?
-  brand       String?
-  imageUrl    String?  @map("image_url")
-  searchTerms String[] @map("search_terms")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  name         String
+  slug         String   @unique
+  category     String?
+  brand        String?
+  brandNorm    String?  @map("brand_norm")
+  typeTags     String[] @map("type_tags")
+  sugarProfile String[] @map("sugar_profile")
+  intentTags   String[] @map("intent_tags")
+  imageUrl     String?  @map("image_url")
+  searchTerms  String[] @map("search_terms")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  listings Listing[]
+  listings     Listing[]
+  priceHistory PriceHistory[]
 
   @@map("products")
 }
@@ -61,7 +66,6 @@ model Listing {
   product      Product?       @relation(fields: [productId], references: [id])
   store        Store?         @relation(fields: [storeId], references: [id])
   priceAlerts  PriceAlert[]
-  priceHistory PriceHistory[]
   clicks       Click[]
 
   @@map("listings")
@@ -96,14 +100,17 @@ model PriceAlert {
 }
 
 model PriceHistory {
-  id           String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  listingId    String?  @map("listing_id") @db.Uuid
-  price        Decimal  @db.Decimal
-  availability String
-  recordedAt   DateTime @default(now()) @map("recorded_at") @db.Timestamptz(6)
+  id         String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  storeSlug  String   @map("store_slug")
+  price      Decimal  @db.Decimal
+  inStock    Boolean  @default(true) @map("in_stock")
+  recordedAt DateTime @default(now()) @map("recorded_at") @db.Timestamptz(6)
 
-  listing Listing? @relation(fields: [listingId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
 
+  @@index([productId, storeSlug])
+  @@index([productId, recordedAt])
   @@map("price_history")
 }
 
@@ -146,4 +153,19 @@ model DealSubscription {
 
   @@index([active, frequency])
   @@map("deal_subscriptions")
+}
+
+model SearchIntentRule {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  intentKey    String   @map("intent_key")
+  triggerTerms String[] @map("trigger_terms")
+  includeTerms String[] @map("include_terms")
+  excludeTerms String[] @map("exclude_terms")
+  priority     Int      @default(100)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive, priority(sort: Desc)])
+  @@map("search_intent_rules")
 }
