@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Plus, Check, ExternalLink, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { ShoppingCart, Plus, Check, ExternalLink, ChevronDown, ChevronUp, Zap, GitCompare } from 'lucide-react';
 import { buildRedirectUrl } from '@/lib/utm';
 import { getStoreConfig } from '@/lib/stores';
 import { useSmartCart } from '@/stores/useSmartCart';
@@ -62,14 +62,14 @@ export default function ProductCard({
             e.preventDefault();
             onCompareToggle?.();
           }}
-          className={`absolute top-2 left-2 w-8 h-8 rounded-full border transition-all flex items-center justify-center shadow-sm z-10 ${
+          className={`absolute top-2.5 left-2.5 w-8.5 h-8.5 rounded-full border transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow-md z-10 ${
             isCompared 
-              ? 'bg-masala-primary border-masala-primary text-white scale-110' 
-              : 'bg-white/80 border-masala-border text-masala-text-muted hover:text-masala-primary hover:border-masala-primary'
+              ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 border-indigo-500 text-white scale-110 shadow-lg shadow-indigo-500/20' 
+              : 'bg-white/95 backdrop-blur-sm border-indigo-100 text-indigo-500 hover:text-indigo-600 hover:border-indigo-300 hover:scale-105'
           }`}
           title={isCompared ? 'Remove from comparison' : 'Add to compare'}
         >
-          {isCompared ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {isCompared ? <Check className="h-4 w-4 stroke-[3]" /> : <GitCompare className="h-4 w-4" />}
         </button>
 
         {/* Store badge — bottom left */}
@@ -160,14 +160,14 @@ export default function ProductCard({
                 variantId: bestPriceListing.variant_id,
               })
             }
-            className={`h-[42px] w-[42px] rounded-xl border-2 flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${
+            className={`h-[42px] w-[42px] rounded-xl border transition-all duration-300 flex-shrink-0 flex items-center justify-center active:scale-90 ${
               isInCart
-                ? 'border-masala-primary bg-masala-primary text-white'
-                : 'border-masala-border text-masala-text-muted hover:border-masala-primary hover:text-masala-primary'
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105'
+                : 'bg-white border-emerald-100 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 hover:scale-105'
             }`}
             aria-label={isInCart ? 'Remove from cart' : 'Add to cart'}
           >
-            {isInCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {isInCart ? <Check className="h-4 w-4 stroke-[3]" /> : <ShoppingCart className="h-4 w-4" />}
           </button>
         </div>
 
