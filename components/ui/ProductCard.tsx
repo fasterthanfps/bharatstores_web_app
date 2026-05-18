@@ -20,7 +20,7 @@ export default function ProductCard({
   listing, onCompareToggle, isCompared, isBestPrice, searchQuery, position,
 }: ProductCardProps) {
   const [showOtherStores, setShowOtherStores] = useState(false);
-  const { addItem, items } = useSmartCart();
+  const { addItem, removeItem, items } = useSmartCart();
 
   const bestPriceListing = listing.allPrices[0];
   const store = getStoreConfig(bestPriceListing.store_name ?? '');
@@ -134,40 +134,44 @@ export default function ProductCard({
         </div>
 
         {/* Action row */}
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-1.5 pt-1">
           <a
             href={redirectUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 h-[42px] bg-masala-primary text-white text-[12px] font-black rounded-xl flex items-center justify-center gap-1.5 hover:bg-masala-secondary active:scale-95 transition-all shadow-sm shadow-masala-primary/20"
+            className="flex-1 h-[38px] sm:h-[42px] bg-masala-primary hover:bg-masala-secondary text-white text-[11px] sm:text-[12px] font-black rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 transition-all shadow-sm shadow-masala-primary/10 group/btn"
           >
-            <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0" />
-            Buy from {store.initials}
+            <span>Buy Now</span>
+            <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 opacity-70 group-hover/btn:opacity-100 transition-opacity" />
           </a>
 
           <button
-            onClick={() =>
-              addItem({
-                productId: listing.id,
-                productName: listing.product_name,
-                imageUrl: listing.image_url ?? '',
-                storeSlug,
-                storeName: store.label,
-                price: listing.bestPrice,
-                weight: bestPriceListing.weight_label ?? '',
-                url: bestPriceListing.product_url,
-                storeHandle: bestPriceListing.store_handle,
-                variantId: bestPriceListing.variant_id,
-              })
-            }
-            className={`h-[42px] w-[42px] rounded-xl border transition-all duration-300 flex-shrink-0 flex items-center justify-center active:scale-90 ${
+            onClick={() => {
+              if (isInCart) {
+                removeItem(listing.id, storeSlug);
+              } else {
+                addItem({
+                  productId: listing.id,
+                  productName: listing.product_name,
+                  imageUrl: listing.image_url ?? '',
+                  storeSlug,
+                  storeName: store.label,
+                  price: listing.bestPrice,
+                  weight: bestPriceListing.weight_label ?? '',
+                  url: bestPriceListing.product_url,
+                  storeHandle: bestPriceListing.store_handle,
+                  variantId: bestPriceListing.variant_id,
+                });
+              }
+            }}
+            className={`h-[38px] w-[38px] sm:h-[42px] sm:w-[42px] rounded-xl border transition-all duration-300 flex-shrink-0 flex items-center justify-center active:scale-90 ${
               isInCart
                 ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105'
                 : 'bg-white border-emerald-100 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 hover:scale-105'
             }`}
             aria-label={isInCart ? 'Remove from cart' : 'Add to cart'}
           >
-            {isInCart ? <Check className="h-4 w-4 stroke-[3]" /> : <ShoppingCart className="h-4 w-4" />}
+            {isInCart ? <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[3]" /> : <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
           </button>
         </div>
 
