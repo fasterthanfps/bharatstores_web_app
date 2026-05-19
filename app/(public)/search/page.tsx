@@ -18,6 +18,17 @@ const SORT_TABS = [
   { id: 'stock', labelKey: 'search.tab.stock' },
 ] as const;
 
+const CATEGORY_TABS = [
+  { id: 'all',     label: 'All' },
+  { id: 'rice',    label: 'Rice & Atta' },
+  { id: 'spices',  label: 'Spices' },
+  { id: 'snacks',  label: 'Snacks' },
+  { id: 'dairy',   label: 'Dairy' },
+  { id: 'dal',     label: 'Dal' },
+  { id: 'frozen',  label: 'Frozen' },
+  { id: 'tea',     label: 'Tea' },
+];
+
 const STORE_NAMES_DISPLAY = ['Dookan', 'Jamoona', 'Swadesh', 'Namma Markt', 'Angaadi', 'Little India', 'Spice Village', 'Grocera'];
 
 function SearchPageContent() {
@@ -34,6 +45,8 @@ function SearchPageContent() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [compareItems, setCompareItems] = useState<any[]>([]);
   const [backgroundPollCount, setBackgroundPollCount] = useState(0);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [insights, setInsights] = useState<any>(null);
 
   const refreshingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -70,8 +83,10 @@ function SearchPageContent() {
       const data = await res.json();
       const listings = data.data?.listings || [];
       const isRefreshing = data.data?.refreshing === true;
+      const apiInsights = data.data?.insights || null;
 
       setResults(listings);
+      setInsights(apiInsights);
       setLoading(false);
       if (listings.length > 0 && !isRefreshing) stopTimer();
 
@@ -169,199 +184,138 @@ function SearchPageContent() {
   const exactInStockResults = exactResults.filter((l: any) => inStockIds.has(l.id));
   const relatedInStockResults = relatedResults.filter((l: any) => inStockIds.has(l.id));
 
+  const activeCategory = (filters as any).category ?? 'all';
+
   return (
-    <div className="min-h-screen pb-24 bg-masala-bg">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Results header */}
-        {displayQuery && !loading && (
-          <div className="mb-5 animate-fade-in">
-            {/* Count + query + refresh */}
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-masala-text-muted uppercase tracking-wider">
-                  {totalCount} {t('search.resultsFor')}
-                </p>
-                <h1 className="text-lg sm:text-2xl font-black text-masala-text leading-tight truncate" style={{ fontFamily: 'Fraunces, serif' }}>
-                  &ldquo;{displayQuery}&rdquo;
-                </h1>
-              </div>
+    <div className="min-h-screen pb-24 bg-masala-bg search-results-page">
 
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                title={t('search.refreshPrices')}
-                className={`flex-shrink-0 w-11 h-11 rounded-2xl border border-masala-border bg-white text-masala-text shadow-sm flex items-center justify-center hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <RefreshCw className={`h-4.5 w-4.5 ${refreshing ? 'animate-spin text-masala-primary' : ''}`} style={{ width: '18px', height: '18px' }} />
-              </button>
+      {/* ═══ LAYER 1: Insight bar — 28px ═══ */}
+      {!loading && totalCount > 0 && (
+        <div>
+          <button
+            onClick={() => setInsightsOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-1.5
+              bg-masala-primary/5 border-b border-masala-border/30 text-xs"
+          >
+            <span className="font-bold text-masala-primary flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-masala-primary animate-pulse flex-shrink-0" />
+              {totalCount} results
+              {insights?.bestPrice && ` · from €${insights.bestPrice.toFixed(2)}`}
+              {insights?.storeCount && ` · ${insights.storeCount} stores`}
+            </span>
+            <span className="text-masala-text-muted text-[10px] font-medium flex-shrink-0">
+              {insightsOpen ? '▲' : '▼ details'}
+            </span>
+          </button>
+
+          {/* Collapsible stats — CLOSED by default */}
+          {insightsOpen && insights && (
+            <div className="grid grid-cols-2 gap-2 p-3 bg-masala-muted/40 border-b border-masala-border/40">
+              {[
+                { label: 'Best Deal',    value: insights.bestDeal?.name,  sub: insights.bestDeal ? `€${insights.bestDeal.price?.toFixed(2)}` : null },
+                { label: 'Lowest €/kg', value: insights.lowestPerKg ? `€${insights.lowestPerKg.toFixed(2)}/kg` : null },
+                { label: 'In Stock',    value: `${insights.inStockCount} products` },
+                { label: 'Stores',      value: `${insights.storeCount} matched` },
+              ].filter(s => s.value).map(stat => (
+                <div key={stat.label} className="bg-white rounded-xl p-2.5 border border-masala-border/60 shadow-sm">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-masala-text-muted">{stat.label}</p>
+                  <p className="text-xs font-bold text-masala-text mt-0.5 line-clamp-1">{stat.value}</p>
+                  {stat.sub && <p className="text-[11px] font-black text-masala-primary">{stat.sub}</p>}
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Sort tabs + Filter button */}
-            <div className="sticky top-[56px] md:top-20 z-30 bg-masala-bg/90 backdrop-blur-md -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-4 border-b border-masala-border/50 lg:border-none">
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                <div className="flex items-center bg-white border border-masala-border rounded-2xl p-1 gap-0.5 shadow-sm flex-shrink-0">
-                  {SORT_TABS.map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setFilters({ sort: tab.id })}
-                      className={`px-3.5 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap min-h-[36px] ${
-                        filters.sort === tab.id
-                          ? 'bg-masala-primary text-white shadow-sm'
-                          : 'text-masala-text-muted hover:text-masala-text'
-                      }`}
-                    >
-                      {t(tab.labelKey)}
-                    </button>
-                  ))}
-                </div>
+      {/* ═══ LAYER 2: Filter chips row — 36px ═══ */}
+      <div className="sticky top-11 z-30 bg-white border-b border-masala-border/40 shadow-sm">
+        <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none">
 
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={`lg:hidden flex items-center gap-2 px-4 py-2 rounded-2xl border min-h-[36px] text-[12px] font-bold whitespace-nowrap flex-shrink-0 shadow-sm transition-all active:scale-95 ${
-                    activeFilterCount > 0
-                      ? 'bg-masala-primary text-white border-masala-primary'
-                      : 'bg-white border-masala-border text-masala-text hover:border-masala-primary'
-                  }`}
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  {t('search.filters')}
-                  {activeFilterCount > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-white text-masala-primary text-[10px] font-black flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-              </div>
+          {/* Category pills */}
+          {CATEGORY_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilters({ ...filters, category: tab.id } as any)}
+              className={`flex-shrink-0 px-3 py-1 rounded-full text-[12px] font-bold
+                transition-all whitespace-nowrap ${
+                activeCategory === tab.id
+                  ? 'bg-masala-primary text-white shadow-sm'
+                  : 'bg-masala-muted/80 text-masala-text-muted hover:bg-masala-muted'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+
+          {/* Visual separator */}
+          <div className="w-px h-4 bg-masala-border flex-shrink-0 mx-0.5" />
+
+          {/* Sort pills */}
+          {[
+            { id: 'best',       label: 'Best' },
+            { id: 'price',      label: 'Price ↑' },
+            { id: 'pricePerKg', label: '€/kg' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilters({ sort: tab.id as any })}
+              className={`flex-shrink-0 px-3 py-1 rounded-full text-[12px] font-bold
+                transition-all whitespace-nowrap ${
+                filters.sort === tab.id
+                  ? 'bg-masala-primary text-white shadow-sm'
+                  : 'bg-masala-muted/80 text-masala-text-muted hover:bg-masala-muted'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+
+          {/* Separator */}
+          <div className="w-px h-4 bg-masala-border flex-shrink-0 mx-0.5" />
+
+          {/* Filters button */}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full
+              text-[12px] font-bold transition-all whitespace-nowrap ${
+              hasActiveFilters
+                ? 'bg-masala-primary text-white'
+                : 'bg-masala-muted/80 text-masala-text-muted'
+            }`}
+          >
+            ⚙️
+            {hasActiveFilters ? ` ${activeFilterCount}` : ' Filters'}
+          </button>
+        </div>
+      </div>
+
+      {/* ═══ LAYER 3: Tiny result count — 20px ═══ */}
+      {!loading && totalCount > 0 && (
+        <p className="text-[10px] text-masala-text-muted px-3 pt-2 pb-0 font-medium">
+          {totalCount} results for "{filters.q.trim()}"
+        </p>
+      )}
+
+      {/* ═══ LAYER 4: PRODUCT GRID — starts at ~128px from sticky header ═══ */}
+      <div className="px-3 pt-2 pb-6 flex gap-8">
+        <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} resultCount={inStockResults.length} />
+        
+        <div className="flex-1 min-w-0">
+          {loading && filters.q && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
             </div>
+          )}
 
-            {totalCount > 0 && (
-              <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
-                <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-                    <Sparkles className="h-3.5 w-3.5" /> {t('search.bestDeal')}
-                  </p>
-                  <p className="text-sm font-black text-masala-text truncate mt-1">{bestDeal?.product_name ?? t('search.noInStockDeals')}</p>
-                </div>
-                <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <TrendingDown className="h-3.5 w-3.5" /> {t('search.lowestPricePerKg')}
-                  </p>
-                  <p className="text-sm font-black text-masala-primary mt-1">
-                    {lowestPerKg?.price_per_kg ? `€${Number(lowestPerKg.price_per_kg).toFixed(2)}${t('search.perKg')}` : t('search.notAvailable')}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <PackageCheck className="h-3.5 w-3.5" /> {t('search.inStock')}
-                  </p>
-                  <p className="text-sm font-black text-masala-text mt-1">{inStockResults.length} {t('home.stat.products').toLowerCase()}</p>
-                </div>
-                <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <Store className="h-3.5 w-3.5" /> {t('search.storesMatched')}
-                  </p>
-                  <p className="text-sm font-black text-masala-text mt-1">{matchedStoresCount}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          {isPolling && <ScrapingProgress query={displayQuery} pollCount={pollCount} elapsedSecs={elapsedSecs} onRetry={fetchResults} />}
 
-        {/* Main layout */}
-        <div className="flex gap-8">
-          {/* Sidebar */}
-          <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} resultCount={inStockResults.length} />
+          {isTimedOut && <NoResults query={displayQuery} onRefresh={handleRefresh} />}
 
-          <div className="flex-1 min-w-0">
-            {/* Loading skeletons */}
-            {loading && filters.q && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
-              </div>
-            )}
-
-            {/* Polling progress */}
-            {isPolling && <ScrapingProgress query={displayQuery} pollCount={pollCount} elapsedSecs={elapsedSecs} onRetry={fetchResults} />}
-
-            {/* Timed out */}
-            {isTimedOut && <NoResults query={displayQuery} onRefresh={handleRefresh} />}
-
-            {/* Exact matches */}
-            {exactInStockResults.length > 0 && (
-              <div className="mb-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-5 w-1 rounded-full bg-masala-primary" />
-                  <p className="text-[11px] font-black uppercase tracking-widest text-masala-primary">
-                    {exactInStockResults.length} {exactInStockResults.length === 1 ? t('search.exactMatch') : t('search.exactMatches')}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                  {exactInStockResults.map((listing: any, i: number) => (
-                    <ProductCard
-                      key={listing.id}
-                      listing={{ ...listing, rank: i + 1 }}
-                      searchQuery={displayQuery}
-                      position={i + 1}
-                      isBestPrice={i === 0}
-                      isCompared={compareItems.some(c => c.id === listing.id)}
-                      onCompareToggle={() => handleCompareToggle(listing)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Related */}
-            {relatedInStockResults.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-5 w-1 rounded-full bg-masala-border" />
-                  <p className="text-[11px] font-black uppercase tracking-widest text-masala-text-muted">
-                    {relatedInStockResults.length} {t('search.relatedProducts')}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                  {relatedInStockResults.map((listing: any, i: number) => (
-                    <ProductCard
-                      key={listing.id}
-                      listing={listing}
-                      searchQuery={displayQuery}
-                      position={exactInStockResults.length + i + 1}
-                      isCompared={compareItems.some(c => c.id === listing.id)}
-                      onCompareToggle={() => handleCompareToggle(listing)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {outOfStockResults.length > 0 && (
-              <div className="mt-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-5 w-1 rounded-full bg-red-200" />
-                  <p className="text-[11px] font-black uppercase tracking-widest text-red-500">
-                    {outOfStockResults.length} {t('search.unavailableTitle')}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 opacity-90">
-                  {outOfStockResults.map((listing: any, i: number) => (
-                    <ProductCard
-                      key={`oos-${listing.id}`}
-                      listing={listing}
-                      searchQuery={displayQuery}
-                      position={totalCount + i + 1}
-                      isCompared={compareItems.some(c => c.id === listing.id)}
-                      onCompareToggle={() => handleCompareToggle(listing)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Fallback */}
-            {exactInStockResults.length === 0 && relatedInStockResults.length === 0 && inStockResults.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {inStockResults.map((listing: any, i: number) => (
+          {exactInStockResults.length > 0 && (
+            <div className="mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {exactInStockResults.map((listing: any, i: number) => (
                   <ProductCard
                     key={listing.id}
                     listing={{ ...listing, rank: i + 1 }}
@@ -373,11 +327,73 @@ function SearchPageContent() {
                   />
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {relatedInStockResults.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-4 w-1 rounded-full bg-masala-border" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-masala-text-muted">
+                  {t('search.relatedProducts')}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {relatedInStockResults.map((listing: any, i: number) => (
+                  <ProductCard
+                    key={listing.id}
+                    listing={listing}
+                    searchQuery={displayQuery}
+                    position={exactInStockResults.length + i + 1}
+                    isCompared={compareItems.some(c => c.id === listing.id)}
+                    onCompareToggle={() => handleCompareToggle(listing)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {outOfStockResults.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-4 w-1 rounded-full bg-red-200" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-500">
+                  {t('search.unavailableTitle')}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 opacity-90">
+                {outOfStockResults.map((listing: any, i: number) => (
+                  <ProductCard
+                    key={`oos-${listing.id}`}
+                    listing={listing}
+                    searchQuery={displayQuery}
+                    position={totalCount + i + 1}
+                    isCompared={compareItems.some(c => c.id === listing.id)}
+                    onCompareToggle={() => handleCompareToggle(listing)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {exactInStockResults.length === 0 && relatedInStockResults.length === 0 && inStockResults.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {inStockResults.map((listing: any, i: number) => (
+                <ProductCard
+                  key={listing.id}
+                  listing={{ ...listing, rank: i + 1 }}
+                  searchQuery={displayQuery}
+                  position={i + 1}
+                  isBestPrice={i === 0}
+                  isCompared={compareItems.some(c => c.id === listing.id)}
+                  onCompareToggle={() => handleCompareToggle(listing)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
+      
       <CompareTray
         items={compareItems}
         onRemove={id => setCompareItems(prev => prev.filter(i => i.id !== id))}
@@ -466,7 +482,7 @@ export default function SearchPage() {
     <Suspense fallback={
       <div className="min-h-screen py-10 px-4 bg-masala-bg">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
           </div>
         </div>

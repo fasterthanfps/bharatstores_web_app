@@ -159,6 +159,18 @@ export async function GET(req: NextRequest) {
 
     const { exact, related } = splitExactVsRelated(finalResults);
 
+    const inStockProducts = finalResults.filter((p: any) => p.allPrices?.some((price: any) => price.availability !== 'OUT_OF_STOCK'));
+    const allPrices = inStockProducts.map((p: any) => p.bestPrice).filter(Boolean);
+    const allPerKg = inStockProducts.flatMap((p: any) => p.allPrices?.map((price: any) => price.price_per_kg)).filter(Boolean);
+    
+    const insights = {
+        bestPrice: allPrices.length ? Math.min(...allPrices) : null,
+        lowestPerKg: allPerKg.length ? Math.min(...allPerKg) : null,
+        storeCount: new Set(finalResults.flatMap((p: any) => p.allPrices?.map((price: any) => price.store_name) ?? [])).size,
+        inStockCount: inStockProducts.length,
+        bestDeal: inStockProducts[0] ? { name: inStockProducts[0].product_name, price: inStockProducts[0].bestPrice } : null,
+    };
+
     if (finalResults.length > 0) {
         if (!hasFresh) triggerBackgroundScrape(query, sortCol);
         
@@ -172,6 +184,7 @@ export async function GET(req: NextRequest) {
                 fresh: hasFresh,
                 cached: true,
                 refreshing: !hasFresh,
+                insights,
             },
         });
     }
@@ -198,6 +211,18 @@ export async function GET(req: NextRequest) {
             const filteredLive = applyGroupedFilters(liveGrouped, { stores, minPrice, maxPrice, inStockOnly, priceMode, quantity, brands, types, sugar });
             const { exact: e, related: r } = splitExactVsRelated(filteredLive);
 
+            const liveInStockProducts = filteredLive.filter((p: any) => p.allPrices?.some((price: any) => price.availability !== 'OUT_OF_STOCK'));
+            const liveAllPrices = liveInStockProducts.map((p: any) => p.bestPrice).filter(Boolean);
+            const liveAllPerKg = liveInStockProducts.flatMap((p: any) => p.allPrices?.map((price: any) => price.price_per_kg)).filter(Boolean);
+            
+            const liveInsights = {
+                bestPrice: liveAllPrices.length ? Math.min(...liveAllPrices) : null,
+                lowestPerKg: liveAllPerKg.length ? Math.min(...liveAllPerKg) : null,
+                storeCount: new Set(filteredLive.flatMap((p: any) => p.allPrices?.map((price: any) => price.store_name) ?? [])).size,
+                inStockCount: liveInStockProducts.length,
+                bestDeal: liveInStockProducts[0] ? { name: liveInStockProducts[0].product_name, price: liveInStockProducts[0].bestPrice } : null,
+            };
+
             return NextResponse.json({
                 success: true,
                 data: { 
@@ -206,7 +231,8 @@ export async function GET(req: NextRequest) {
                     relatedCount: r.length, 
                     total: filteredLive.length,
                     fresh: true, 
-                    cached: false 
+                    cached: false,
+                    insights: liveInsights,
                 },
             });
         }

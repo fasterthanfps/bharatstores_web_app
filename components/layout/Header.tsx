@@ -9,6 +9,7 @@ import LanguageToggle from '@/components/layout/LanguageToggle';
 import SearchBar from '@/components/SearchBar';
 import { useLang } from '@/lib/utils/LanguageContext';
 import { useSmartCart } from '@/stores/useSmartCart';
+import HamburgerMenu from '@/components/ui/HamburgerMenu';
 import dynamic from 'next/dynamic';
 
 const SmartCartPanel = dynamic(() => import('@/components/ui/SmartCartPanel'), { ssr: false });
@@ -75,10 +76,37 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
-
-        {/* ── Top bar: Logo + Search + Cart ── */}
-        <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full gap-4">
+      <header className={`sticky top-0 z-50 bg-white shadow-sm ${isSearch ? 'h-11' : ''}`}>
+        {isSearch ? (
+          <div className="h-full px-3 flex items-center gap-2 max-w-[1600px] mx-auto w-full">
+            <Link href="/" className="flex-shrink-0 flex items-center gap-0.5">
+              <span className="text-masala-primary font-black text-lg" style={{ fontFamily: 'Fraunces, serif' }}>B</span>
+              <span className="text-masala-text-muted text-[10px] font-black" style={{ fontFamily: 'Fraunces, serif' }}>.eu</span>
+            </Link>
+            <div className="flex-1 relative flex items-center">
+              <form onSubmit={handleMobileSearch} className="w-full relative flex items-center">
+                <Search
+                  className="absolute left-3.5 text-masala-text-muted pointer-events-none"
+                  style={{ width: '15px', height: '15px' }}
+                />
+                <input
+                  ref={mobileInputRef}
+                  type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  value={mobileSearchQuery}
+                  onChange={e => setMobileSearchQuery(e.target.value)}
+                  placeholder="Search Indian groceries…"
+                  className="w-full h-8 pl-9 pr-3 rounded-xl bg-masala-muted/50 border border-masala-border text-[13px] font-medium text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
+                />
+              </form>
+            </div>
+            <HamburgerMenu />
+          </div>
+        ) : (
+          <>
+            {/* ── Top bar: Logo + Search + Cart ── */}
+            <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full gap-4">
 
           {/* Logo + Language Toggle */}
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -212,6 +240,8 @@ export default function Header() {
               );
             })}
           </div>
+        )}
+        </>
         )}
       </header>
 

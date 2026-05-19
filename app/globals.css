@@ -556,3 +556,26 @@ a, button {
   50%       { transform: translateY(-6px); }
 }
 
+/* Ensure search results page has the warm background */
+.search-results-page {
+  background-color: #FAF7F2;
+  min-height: 100vh;
+}
+
+/* Card hover lift effect */
+.product-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+}
+
+/* Smooth ADD button animation */
+@keyframes add-bounce {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(0.92); }
+}
+.add-btn-tap:active { animation: add-bounce 150ms ease; }
+
+

@@ -265,6 +265,9 @@ export interface GroupedListing {
     _score: number;
     bestPrice: number;
     bestStore: string;
+    originalPrice?: number;
+    rating?: number;
+    ratingCount?: number;
     allPrices: {
         id: string;
         store_name: string;
@@ -334,6 +337,9 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
             _score: best._score,
             bestPrice: Number(best.price),
             bestStore: best.store_name,
+            originalPrice: best.originalPrice ? Number(best.originalPrice) : undefined,
+            rating: best.rating ? Number(best.rating) : undefined,
+            ratingCount: best.ratingCount ? Number(best.ratingCount) : undefined,
             allPrices: sortedGroup.map(l => ({
                 id: l.id,
                 store_name: l.store_name,

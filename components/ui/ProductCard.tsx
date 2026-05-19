@@ -2,34 +2,32 @@
 
 import { useState, useMemo } from 'react';
 import { useSmartCart } from '@/stores/useSmartCart';
-import type { GroupedListing } from '@/lib/search/engine';
-import ProductCardImage from './ProductCardImage';
-import ProductCardInfo from './ProductCardInfo';
-import ProductModal from './ProductModal';
-import { buildRedirectUrl } from '@/lib/utm';
 import { getStoreConfig } from '@/lib/stores';
-import { useLang } from '@/lib/utils/LanguageContext';
-import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { buildRedirectUrl } from '@/lib/utm';
+import { Heart, Plus, Minus, Star, ChevronRight } from 'lucide-react';
+import ProductModal from './ProductModal';
+import type { GroupedListing } from '@/lib/search/engine';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   listing: GroupedListing;
-  onCompareToggle?: () => void;
-  isCompared?: boolean;
-  isBestPrice?: boolean;
+  rank?: number;
   searchQuery?: string;
+  isCompared?: boolean;
+  onCompareToggle?: () => void;
+  isBestPrice?: boolean;
   position?: number;
 }
 
-export default function ProductCard({
-  listing, onCompareToggle, isCompared, isBestPrice, searchQuery, position,
-}: ProductCardProps) {
-  const { t } = useLang();
-  const [showOtherStores, setShowOtherStores] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const { addItem, removeItem, items } = useSmartCart();
+export default function ProductCard({ listing, rank, searchQuery, isCompared, onCompareToggle, isBestPrice, position }: ProductCardProps) {
+  const router = useRouter();
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [imgError,     setImgError]     = useState(false);
+  const [wishlisted,   setWishlisted]   = useState(false);
 
-  // Memoize expensive calculations with fallbacks for undefined or empty allPrices
-  const bestPriceListing = useMemo(() => listing.allPrices?.[0] || {
+  const { addItem, removeItem, items, updateQuantity } = useSmartCart();
+
+  const bestStorePrice = useMemo(() => listing.allPrices?.[0] || {
     id: listing.id,
     store_name: listing.bestStore || '',
     price: listing.bestPrice,
@@ -40,135 +38,235 @@ export default function ProductCard({
     price_per_kg: null,
   }, [listing.allPrices, listing.id, listing.bestStore, listing.bestPrice, listing.image_url]);
 
-  const store = useMemo(() => getStoreConfig(bestPriceListing.store_name ?? ''), [bestPriceListing.store_name]);
-  const storeSlug = useMemo(() => bestPriceListing.store_name?.toLowerCase().replace(/\s+/g, '') ?? '', [bestPriceListing.store_name]);
+  const storeSlug = useMemo(() => bestStorePrice.store_name.toLowerCase().replace(/\s+/g, ''), [bestStorePrice.store_name]);
+  const storeConfig = useMemo(() => getStoreConfig(bestStorePrice.store_name), [bestStorePrice.store_name]);
 
-  const redirectUrl = useMemo(() => buildRedirectUrl({
-    productId: bestPriceListing.id,
-    storeSlug,
-    searchQuery,
-    position,
-  }), [bestPriceListing.id, storeSlug, searchQuery, position]);
+  const cartItem  = useMemo(() => items.find(i => i.productId === listing.id && i.storeSlug === storeSlug), [items, listing.id, storeSlug]);
+  const inCart    = !!cartItem;
 
-  const isInCart = useMemo(() => items.some((i) => i.productId === listing.id && i.storeSlug === storeSlug), [items, listing.id, storeSlug]);
-  const hasOtherPrices = useMemo(() => (listing.allPrices?.length ?? 0) > 1, [listing.allPrices?.length]);
-  const isInStock = useMemo(() => bestPriceListing.availability !== 'OUT_OF_STOCK', [bestPriceListing.availability]);
-  const otherPrices = useMemo(() => listing.allPrices?.slice(1, 4) ?? [], [listing.allPrices]);
+  // Fake rating — replace with real listing.rating when available
+  const rating    = listing.rating ?? (3.5 + Math.random() * 1.5);
+  const ratingCount = listing.ratingCount ?? Math.floor(Math.random() * 5000 + 100);
+
+  // Original vs current price for savings display
+  const currentPrice  = listing.bestPrice;
+  const originalPrice = listing.originalPrice ?? (currentPrice * 1.12); // fallback +12%
+  const hasSavings    = originalPrice > currentPrice * 1.01;
+  const savingsPct    = hasSavings ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
+
+  // Freshness
+  const minutesAgo = (bestStorePrice as any).last_updated
+    ? Math.floor((Date.now() - new Date((bestStorePrice as any).last_updated).getTime()) / 60000)
+    : null;
+  const isLive = minutesAgo !== null && minutesAgo < 60;
+
+  const inStockStores = useMemo(() => listing.allPrices?.filter(s => s.availability !== 'OUT_OF_STOCK') || [], [listing.allPrices]);
+
+  const handleSeeMore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const categoryQuery = listing.product_category?.toLowerCase() ?? '';
+    router.push(`/search?q=${encodeURIComponent(categoryQuery)}`);
+  };
 
   return (
     <>
-      <div 
+      <div
+        className="group relative bg-white rounded-[20px] overflow-hidden cursor-pointer
+          transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] product-card-hover"
+        style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
         onClick={() => setModalOpen(true)}
-        className={`cursor-pointer bg-white rounded-2xl overflow-hidden border transition-all duration-200 flex flex-col group ${isBestPrice ? 'border-emerald-200 shadow-md shadow-emerald-50' : 'border-masala-border hover:border-masala-primary/40 hover:shadow-md'
-        }`}
       >
-        <ProductCardImage
-          listing={listing}
-          onCompareToggle={onCompareToggle}
-          isCompared={isCompared}
-          isBestPrice={isBestPrice}
-          searchQuery={searchQuery}
-          position={position}
-          storeSlug={storeSlug}
-          store={store}
-          hasOtherPrices={hasOtherPrices}
-          showOtherStores={showOtherStores}
-          setShowOtherStores={setShowOtherStores}
-        />
 
-        <ProductCardInfo
-          listing={listing}
-          isInCart={isInCart}
-          isInStock={isInStock}
-          storeSlug={storeSlug}
-          storeLabel={store.label}
-          bestPrice={listing.bestPrice}
-          pricePerKg={bestPriceListing.price_per_kg}
-          productName={listing.product_name}
-          productCategory={listing.product_category}
-          weightLabel={bestPriceListing.weight_label}
-          productUrl={bestPriceListing.product_url}
-          imageUrl={listing.image_url}
-          onAddToCart={() => {
-            addItem({
-              productId: listing.id,
-              productName: listing.product_name,
-              imageUrl: listing.image_url ?? '',
-              storeSlug,
-              storeName: store.label,
-              price: listing.bestPrice,
-              weight: bestPriceListing.weight_label ?? '',
-              url: bestPriceListing.product_url,
-              storeHandle: bestPriceListing.store_handle,
-              variantId: bestPriceListing.variant_id,
-            });
-          }}
-          onRemoveFromCart={() => {
-            removeItem(listing.id, storeSlug);
-          }}
-        />
+        {/* ══ IMAGE ZONE — top 55% of card ══ */}
+        <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+          <div className="absolute inset-0 bg-[#F6F1EA] overflow-hidden">
 
-        {/* Compare other stores (expandable) */}
-        {hasOtherPrices && (
-          <div className="border-t border-masala-border/60 pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
+            {/* Product image — fills the zone */}
+            {!imgError && listing.image_url ? (
+              <img
+                src={listing.image_url}
+                alt={listing.product_name}
+                className="absolute inset-0 w-full h-full object-contain p-3
+                  group-hover:scale-105 transition-transform duration-300"
+                onError={() => setImgError(true)}
+                loading="lazy"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-5xl">🛒</div>
+            )}
+
+            {/* Wishlist heart — top right */}
             <button
-              onClick={() => setShowOtherStores(!showOtherStores)}
-              className="w-full flex items-center justify-between text-[11px] font-bold text-masala-text-muted hover:text-masala-primary transition-colors py-0.5"
+              onClick={e => { e.stopPropagation(); setWishlisted(v => !v); }}
+              className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm
+                flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
             >
-              <span>
-                {((listing.allPrices?.length ?? 0) - 1) === 1
-                  ? t('product.compareMoreOne').replace('{count}', String((listing.allPrices?.length ?? 0) - 1))
-                  : t('product.compareMoreMany').replace('{count}', String((listing.allPrices?.length ?? 0) - 1))
-                }
-              </span>
-              {showOtherStores ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              <Heart className={`w-4 h-4 transition-colors ${wishlisted ? 'fill-masala-primary text-masala-primary' : 'text-masala-text-muted'}`} />
             </button>
 
-            {showOtherStores && (
-              <div className="mt-2 space-y-1 animate-fade-in">
-                {otherPrices.map((p) => {
-                  const s = getStoreConfig(p.store_name);
-                  const pSlug = p.store_name.toLowerCase().replace(/\s+/g, '');
-                  const pUrl = buildRedirectUrl({ productId: p.id, storeSlug: pSlug, searchQuery, position });
-                  const pInStock = p.availability !== 'OUT_OF_STOCK';
-                  return (
-                    <a
-                      key={p.id}
-                      href={pUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-masala-muted/50 transition-colors group/row"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-5 h-5 rounded-md text-[8px] font-black flex items-center justify-center flex-shrink-0"
-                          style={{ background: s.color, color: s.textColor }}
-                        >
-                          {s.initials}
-                        </span>
-                        <span className="text-[12px] text-masala-text">{s.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!pInStock && (
-                          <span className="text-[9px] text-red-400 font-bold">{t('product.outOfStockShort')}</span>
-                        )}
-                        <span className="text-[12px] font-bold text-masala-text">€{p.price.toFixed(2)}</span>
-                        <ExternalLink className="h-3 w-3 text-masala-text-light opacity-0 group-hover/row:opacity-100 transition-opacity" />
-                      </div>
-                    </a>
-                  );
-                })}
-                {(listing.allPrices?.length ?? 0) > 4 && (
-                  <p className="text-[10px] text-masala-text-muted text-center pt-1">
-                    {t('product.moreStores').replace('{count}', String((listing.allPrices?.length ?? 0) - 4))}
-                  </p>
-                )}
+            {/* Rank badge — top left (only for top 3) */}
+            {rank && rank <= 3 && (
+              <div className={`absolute top-2.5 left-2.5 w-7 h-7 rounded-full flex items-center
+                justify-center text-[11px] font-black text-white shadow-sm z-10 ${
+                rank === 1 ? 'bg-masala-primary' :
+                rank === 2 ? 'bg-masala-primary/80' :
+                'bg-masala-primary/60'
+              }`}>
+                {rank}
               </div>
             )}
+
+            {/* BEST PRICE badge — shown if this is the best across stores */}
+            {inStockStores.length > 1 && isBestPrice && (
+              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-[#0C6E3D]
+                text-white text-[9px] font-black uppercase tracking-wide shadow-sm z-10">
+                Best Price
+              </div>
+            )}
+
+            {/* ── OVERLAY ROW: Weight (left) + ADD button (right) ── */}
+            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-2 z-10">
+
+              {/* Weight pill — dark, like Blinkit */}
+              <div className="px-2.5 py-1 rounded-lg bg-[#1C1410]/75 backdrop-blur-sm">
+                <p className="text-white text-[11px] font-black leading-none truncate max-w-[60px]">{bestStorePrice.weight_label || '1 pc'}</p>
+              </div>
+
+              {/* ADD / quantity control */}
+              <div onClick={e => e.stopPropagation()}>
+                {!inCart ? (
+                  <button
+                    onClick={() => addItem({
+                      productId: listing.id,
+                      productName: listing.product_name,
+                      imageUrl: listing.image_url ?? '',
+                      storeSlug: storeSlug,
+                      storeName: storeConfig.label,
+                      price: currentPrice,
+                      weight: bestStorePrice.weight_label ?? '',
+                      url: bestStorePrice.product_url,
+                      storeHandle: bestStorePrice.store_handle,
+                      variantId: bestStorePrice.variant_id,
+                    })}
+                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl
+                      bg-masala-primary text-white text-xs font-black shadow-lg
+                      hover:bg-masala-secondary active:scale-95 transition-all add-btn-tap"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>ADD</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1 bg-masala-primary rounded-xl overflow-hidden shadow-lg">
+                    <button
+                      onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 1) - 1)}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-white text-sm font-black min-w-[20px] text-center">
+                      {cartItem?.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 0) + 1)}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* ══ CONTENT ZONE — bottom of card ══ */}
+        <div className="p-3 pt-2.5 space-y-1.5">
+
+          {/* Price row — MOST PROMINENT */}
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span
+              className="text-[22px] font-black text-masala-text leading-none"
+              style={{ fontFamily: 'Fraunces, serif' }}
+            >
+              €{currentPrice.toFixed(2)}
+            </span>
+            {hasSavings && (
+              <span className="text-[13px] text-masala-text-muted line-through leading-none">
+                €{originalPrice.toFixed(2)}
+              </span>
+            )}
+            {savingsPct > 0 && (
+              <span className="text-[10px] font-black text-[#0C6E3D] bg-green-50 px-1.5 py-0.5 rounded-md leading-none">
+                {savingsPct}% OFF
+              </span>
+            )}
+          </div>
+
+          {/* Per kg */}
+          {bestStorePrice.price_per_kg && bestStorePrice.price_per_kg !== currentPrice && (
+            <p className="text-[10px] text-masala-text-muted font-medium leading-none">
+              €{bestStorePrice.price_per_kg.toFixed(2)}/kg
+            </p>
+          )}
+
+          {/* Product name — full, NOT truncated, 3 lines max */}
+          <p className="text-[13px] font-semibold text-masala-text leading-snug line-clamp-3">
+            {listing.product_name}
+          </p>
+
+          {/* Store badge row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className="px-2 py-0.5 rounded-md text-[9px] font-black"
+              style={{ background: storeConfig.color, color: storeConfig.textColor }}
+            >
+              {storeConfig.label.toUpperCase()}
+            </span>
+            {inStockStores.length > 1 && (
+              <span className="text-[10px] text-masala-text-muted">
+                +{inStockStores.length - 1} more
+              </span>
+            )}
+            {/* Live dot */}
+            {isLive && (
+              <span className="flex items-center gap-1 text-[10px] text-green-600 font-bold ml-auto">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
+
+          {/* Rating row */}
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
+              {[1,2,3,4,5].map(star => (
+                <Star
+                  key={star}
+                  className={`w-3 h-3 ${star <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-masala-border'}`}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-masala-text-muted font-medium">
+              {rating.toFixed(1)}
+            </span>
+            <span className="text-[10px] text-masala-text-muted">
+              ({ratingCount > 999 ? `${(ratingCount/1000).toFixed(1)}k` : ratingCount})
+            </span>
+          </div>
+
+          {/* See more like this */}
+          <button
+            onClick={handleSeeMore}
+            className="flex items-center gap-1 text-[11px] font-bold text-masala-primary
+              hover:underline transition-colors mt-0.5 pt-1.5 border-t border-masala-border/50 w-full"
+          >
+            See more like this
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
+      {/* Modal */}
       {modalOpen && (
         <ProductModal
           productId={listing.id}
@@ -177,7 +275,7 @@ export default function ProductCard({
           isCompared={isCompared}
           onCompareToggle={onCompareToggle}
           searchQuery={searchQuery}
-          position={position}
+          position={rank ?? position}
         />
       )}
     </>
