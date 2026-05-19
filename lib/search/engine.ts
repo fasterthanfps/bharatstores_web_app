@@ -233,7 +233,7 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         let fuzzyMatches = 0;
         for (const qt of coreTokens) {
             if (qt.length < 4) continue; // Only fuzzy match longer words
-            const hasFuzzyMatch = significantTokens.some(nt => {
+            const hasFuzzyMatch = significantTokens.some((nt: string) => {
                 if (Math.abs(nt.length - qt.length) > 2) return false;
                 const dist = levenshteinDistance(qt, nt);
                 return dist <= 2 && dist <= Math.floor(qt.length / 3);
@@ -245,7 +245,7 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         }
     } else if (queryLower.length >= 4) {
         // Single word query typo tolerance
-        const hasFuzzyMatch = significantTokens.some(nt => {
+        const hasFuzzyMatch = significantTokens.some((nt: string) => {
             if (Math.abs(nt.length - queryLower.length) > 2) return false;
             const dist = levenshteinDistance(queryLower, nt);
             return dist <= 2 && dist <= Math.floor(queryLower.length / 3);
@@ -308,7 +308,7 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
         if (!validImage || validImage.trim() === '') {
             const bestTokens = (best.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
             if (bestTokens.length >= 2) {
-                const fallbackItem = scored.find(other => {
+                const fallbackItem = scored.find((other: any) => {
                     if (!other.image_url || other.image_url.trim() === '') return false;
                     const otherTokens = (other.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
                     let overlap = 0;
