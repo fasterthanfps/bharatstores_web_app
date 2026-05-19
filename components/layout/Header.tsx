@@ -5,6 +5,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Search } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Logo from '@/components/ui/Logo';
+import LanguageToggle from '@/components/layout/LanguageToggle';
 import SearchBar from '@/components/SearchBar';
 import { useLang } from '@/lib/utils/LanguageContext';
 import { useSmartCart } from '@/stores/useSmartCart';
@@ -79,9 +80,10 @@ export default function Header() {
         {/* ── Top bar: Logo + Search + Cart ── */}
         <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full gap-4">
 
-          {/* Logo */}
-          <div className="flex-shrink-0">
+          {/* Logo + Language Toggle */}
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Logo />
+            <LanguageToggle size="compact" />
           </div>
 
 

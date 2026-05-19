@@ -1,27 +1,33 @@
+'use client';
+
+import { useLang } from '@/lib/utils/LanguageContext';
+
 const CATEGORIES = [
-  { emoji: '🌾', label: 'Wheat / Chapati Flour', query: 'wheat flour' },
-  { emoji: '🍚', label: 'Basmati Rice', query: 'basmati rice' },
-  { emoji: '🍛', label: 'South Indian Rice', query: 'ponni rice' },
-  { emoji: '🥣', label: 'Grains, Flours & Mixes', query: 'flour mixes' },
-  { emoji: '🌶️', label: 'Spices & Condiments', query: 'spices masala' },
-  { emoji: '🍜', label: 'Instant Food / Ready To Eat', query: 'ready to eat' },
-  { emoji: '🍬', label: 'Sweets', query: 'indian sweets' },
-  { emoji: '🍘', label: 'Savoury Snacks', query: 'namkeen snacks' },
-  { emoji: '🥫', label: 'Pickles & Sauces', query: 'pickles chutney' },
-  { emoji: '🥤', label: 'Beverages', query: 'tea coffee' },
-  { emoji: '🧴', label: 'Personal & Home Care', query: 'home care' },
-  { emoji: '🪔', label: 'Pooja Items', query: 'pooja items' },
+  { emoji: '🌾', key: 'category.flour', query: 'wheat flour' },
+  { emoji: '🍚', key: 'category.basmati', query: 'basmati rice' },
+  { emoji: '🍛', key: 'category.southrice', query: 'ponni rice' },
+  { emoji: '🥣', key: 'category.grains', query: 'flour mixes' },
+  { emoji: '🌶️', key: 'category.spices', query: 'spices masala' },
+  { emoji: '🍜', key: 'category.instant', query: 'ready to eat' },
+  { emoji: '🍬', key: 'category.sweets', query: 'indian sweets' },
+  { emoji: '🍘', key: 'category.snacks', query: 'namkeen snacks' },
+  { emoji: '🥫', key: 'category.pickles', query: 'pickles chutney' },
+  { emoji: '🥤', key: 'category.beverages', query: 'tea coffee' },
+  { emoji: '🧴', key: 'category.care', query: 'home care' },
+  { emoji: '🪔', key: 'category.pooja', query: 'pooja items' },
 ];
 
 export default function CategoryGrid() {
+  const { t } = useLang();
+
   return (
     <section className="py-16 px-4 max-w-7xl mx-auto">
       <div className="text-center mb-8 sm:mb-10">
         <h2 className="text-3xl sm:text-4xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
-          Explore Popular Categories
+          {t('categories.title')}
         </h2>
         <p className="text-masala-text-muted mt-3 text-base sm:text-lg">
-          Jump straight into what you want to compare across stores
+          {t('categories.subtitle')}
         </p>
       </div>
 
@@ -42,7 +48,7 @@ export default function CategoryGrid() {
             </span>
             <div className="relative">
               <span className="block text-[13px] sm:text-[14px] font-black text-masala-text leading-tight">
-                {cat.label}
+                {t(cat.key)}
               </span>
             </div>
           </a>

@@ -6,7 +6,8 @@ import {
     groupListingsByProduct,
     splitExactVsRelated,
     shapeListings,
-    saveAndReturnListings
+    saveAndReturnListings,
+    getCategoryFromQuery
 } from '@/lib/search/engine';
 import { smartTruncateQuery } from '@/lib/search/normalize';
 
@@ -126,9 +127,11 @@ export async function GET(req: NextRequest) {
     const coreQuery = smartTruncateQuery(queryLower);
     const allTerms = Array.from(new Set([queryLower, coreQuery, ...synonyms])).filter(t => t.length >= 2);
 
-    const orClauses = allTerms
-        .map(t => `name.ilike.%${t}%`)
-        .join(',');
+    const matchedCategory = getCategoryFromQuery(queryLower);
+    const orClauses = [
+        ...allTerms.map(t => `name.ilike.%${t}%`),
+        ...(matchedCategory ? [`category.eq.${matchedCategory}`] : [])
+    ].join(',');
 
     const { data: allCached } = await supabase
         .from('listings')

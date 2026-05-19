@@ -8,6 +8,7 @@ import ProductCardInfo from './ProductCardInfo';
 import ProductModal from './ProductModal';
 import { buildRedirectUrl } from '@/lib/utm';
 import { getStoreConfig } from '@/lib/stores';
+import { useLang } from '@/lib/utils/LanguageContext';
 import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 interface ProductCardProps {
@@ -22,6 +23,7 @@ interface ProductCardProps {
 export default function ProductCard({
   listing, onCompareToggle, isCompared, isBestPrice, searchQuery, position,
 }: ProductCardProps) {
+  const { t } = useLang();
   const [showOtherStores, setShowOtherStores] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { addItem, removeItem, items } = useSmartCart();
@@ -113,7 +115,12 @@ export default function ProductCard({
               onClick={() => setShowOtherStores(!showOtherStores)}
               className="w-full flex items-center justify-between text-[11px] font-bold text-masala-text-muted hover:text-masala-primary transition-colors py-0.5"
             >
-              <span>Compare {(listing.allPrices?.length ?? 0) - 1} more {(listing.allPrices?.length ?? 0) - 1 === 1 ? 'store' : 'stores'}</span>
+              <span>
+                {((listing.allPrices?.length ?? 0) - 1) === 1
+                  ? t('product.compareMoreOne').replace('{count}', String((listing.allPrices?.length ?? 0) - 1))
+                  : t('product.compareMoreMany').replace('{count}', String((listing.allPrices?.length ?? 0) - 1))
+                }
+              </span>
               {showOtherStores ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
 
@@ -143,7 +150,7 @@ export default function ProductCard({
                       </div>
                       <div className="flex items-center gap-2">
                         {!pInStock && (
-                          <span className="text-[9px] text-red-400 font-bold">Out</span>
+                          <span className="text-[9px] text-red-400 font-bold">{t('product.outOfStockShort')}</span>
                         )}
                         <span className="text-[12px] font-bold text-masala-text">€{p.price.toFixed(2)}</span>
                         <ExternalLink className="h-3 w-3 text-masala-text-light opacity-0 group-hover/row:opacity-100 transition-opacity" />
@@ -153,7 +160,7 @@ export default function ProductCard({
                 })}
                 {(listing.allPrices?.length ?? 0) > 4 && (
                   <p className="text-[10px] text-masala-text-muted text-center pt-1">
-                    + {(listing.allPrices?.length ?? 0) - 4} more stores
+                    {t('product.moreStores').replace('{count}', String((listing.allPrices?.length ?? 0) - 4))}
                   </p>
                 )}
               </div>

@@ -3,8 +3,10 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Bell, CheckCircle2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useLang } from '@/lib/utils/LanguageContext';
 
 function DealsContent() {
+  const { t } = useLang();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -62,22 +64,22 @@ function DealsContent() {
   };
 
   const tabs = [
-    { id: 'percentage', label: '🔥 % Off' },
-    { id: 'category', label: '📦 By Category' },
-    { id: 'daily', label: '⚡ Daily' },
-    { id: 'weekly', label: '📅 Weekly' }
+    { id: 'percentage', label: t('deals.tab.percentage') },
+    { id: 'category', label: t('deals.tab.category') },
+    { id: 'daily', label: t('deals.tab.daily') },
+    { id: 'weekly', label: t('deals.tab.weekly') }
   ];
 
   const categories = [
-    { label: 'All', value: '' },
-    { label: '🌾 Rice', value: 'rice' },
-    { label: '🫘 Dal', value: 'dal' },
-    { label: '🧈 Dairy', value: 'dairy' },
-    { label: '🌶️ Spices', value: 'spices' },
-    { label: '🍘 Snacks', value: 'snacks' },
-    { label: '🍵 Tea', value: 'tea' },
-    { label: '🥗 Frozen', value: 'frozen' },
-    { label: '🧴 Care', value: 'care' }
+    { label: t('deals.all'), value: '' },
+    { label: '🌾 ' + t('category.basmati'), value: 'rice' },
+    { label: '🫘 ' + t('category.dal'), value: 'dal' },
+    { label: '🧈 ' + t('category.dairy'), value: 'dairy' },
+    { label: '🌶️ ' + t('category.spices'), value: 'spices' },
+    { label: '🍘 ' + t('category.snacks'), value: 'snacks' },
+    { label: '🍵 ' + t('category.tea'), value: 'tea' },
+    { label: '🥗 ' + t('category.frozen'), value: 'frozen' },
+    { label: '🧴 ' + t('category.care'), value: 'care' }
   ];
 
   return (
@@ -85,31 +87,31 @@ function DealsContent() {
       {/* Header & Alerts */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-masala-text mb-2">Everyday Best Deals</h1>
-          <p className="text-masala-text-muted">Find the biggest discounts across all Indian stores in Europe.</p>
+          <h1 className="text-3xl font-black text-masala-text mb-2">{t('deals.title')}</h1>
+          <p className="text-masala-text-muted">{t('deals.subtitle')}</p>
         </div>
         
         <div className="relative">
           {subscribed ? (
             <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5" /> Deal alerts on
+              <CheckCircle2 className="w-5 h-5" /> {t('deals.alertsOn')}
             </div>
           ) : (
             <button
               onClick={() => setShowForm(!showForm)}
               className="flex items-center gap-2 px-4 py-2 bg-masala-primary text-white rounded-xl font-bold text-sm hover:bg-masala-secondary transition-colors"
             >
-              <Bell className="w-4 h-4" /> GET DEAL ALERTS
+              <Bell className="w-4 h-4" /> {t('deals.getAlerts')}
             </button>
           )}
 
           {showForm && !subscribed && (
             <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-masala-border p-4 z-50">
-              <h3 className="font-bold mb-3 text-masala-text">Never miss a deal!</h3>
+              <h3 className="font-bold mb-3 text-masala-text">{t('deals.neverMiss')}</h3>
               <form onSubmit={handleSubscribe} className="space-y-3">
                 <input
                   type="email"
-                  placeholder="Your email address"
+                  placeholder={t('deals.emailPlaceholder')}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-masala-muted/50 border border-masala-border text-sm"
@@ -120,16 +122,16 @@ function DealsContent() {
                   onChange={e => setFrequency(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-masala-muted/50 border border-masala-border text-sm"
                 >
-                  <option value="daily">Daily digest</option>
-                  <option value="weekly">Weekly top deals</option>
-                  <option value="instant">Instant alerts</option>
+                  <option value="daily">{t('deals.dailyDigest')}</option>
+                  <option value="weekly">{t('deals.weeklyTop')}</option>
+                  <option value="instant">{t('deals.instantAlerts')}</option>
                 </select>
                 <button
                   type="submit"
                   disabled={subscribing}
                   className="w-full py-2 bg-masala-primary text-white rounded-xl font-bold text-sm"
                 >
-                  {subscribing ? 'Subscribing...' : 'Subscribe'}
+                  {subscribing ? t('deals.subscribing') : t('deals.subscribe')}
                 </button>
               </form>
             </div>
@@ -141,7 +143,7 @@ function DealsContent() {
       {flashDeals.length > 0 && (
         <div className="mb-12">
           <h2 className="text-xl font-black text-masala-text mb-4 flex items-center gap-2">
-            ⚡ Flash Deals <span className="text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded-full">&gt;15% OFF</span>
+            ⚡ {t('deals.flashDeals')} <span className="text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded-full">&gt;15% {t('deals.off')}</span>
           </h2>
           <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide snap-x">
             {flashDeals.map(deal => (
@@ -202,10 +204,10 @@ function DealsContent() {
         </div>
       ) : (
         <div className="text-center py-20 bg-masala-muted/30 rounded-3xl">
-          <h3 className="text-lg font-bold text-masala-text mb-2">No deals in this category right now</h3>
-          <p className="text-masala-text-muted mb-6">Check back soon — we update every 2 hours</p>
+          <h3 className="text-lg font-bold text-masala-text mb-2">{t('deals.noDeals')}</h3>
+          <p className="text-masala-text-muted mb-6">{t('deals.checkBack')}</p>
           <Link href="/deals" className="inline-flex items-center gap-2 font-bold text-masala-primary hover:underline">
-            View all deals <ChevronRight className="w-4 h-4" />
+            {t('deals.viewAll')} <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
       )}
@@ -214,6 +216,7 @@ function DealsContent() {
 }
 
 function DealCard({ deal, flash = false }: { deal: any, flash?: boolean }) {
+  const { t } = useLang();
   const discount = Math.round(deal.discountPercent);
   
   return (
@@ -243,14 +246,14 @@ function DealCard({ deal, flash = false }: { deal: any, flash?: boolean }) {
             <span className="text-lg font-black text-masala-primary leading-none">€{Number(deal.bestPrice).toFixed(2)}</span>
             <span className="text-xs text-masala-text-muted line-through mb-0.5">€{Number(deal.comparePrice).toFixed(2)}</span>
           </div>
-          <p className="text-xs font-bold text-green-600 mb-3">Save €{Number(deal.savingsAmount).toFixed(2)}</p>
+          <p className="text-xs font-bold text-green-600 mb-3">{t('deals.save')} €{Number(deal.savingsAmount).toFixed(2)}</p>
           
           <Link 
             href={`/api/redirect?pid=${deal.productId}&store=${deal.storeId || deal.storeName}`}
             target="_blank"
             className="w-full py-2 bg-masala-primary/10 text-masala-primary hover:bg-masala-primary hover:text-white rounded-xl font-bold text-xs flex items-center justify-center transition-colors"
           >
-            BUY NOW
+            {t('deals.buyNow')}
           </Link>
         </div>
       </div>
@@ -274,8 +277,9 @@ function DealCardSkeleton() {
 }
 
 export default function DealsPage() {
+  const { t } = useLang();
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading deals...</div>}>
+    <Suspense fallback={<div className="p-8 text-center">{t('deals.loading')}</div>}>
       <DealsContent />
     </Suspense>
   );

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -8,18 +8,20 @@ import CompareTray from '@/components/ui/CompareTray';
 import FilterSidebar from '@/components/ui/FilterSidebar';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { getStoreConfig } from '@/lib/stores';
+import { useLang } from '@/lib/utils/LanguageContext';
 import { Search, RefreshCw, Zap, SlidersHorizontal, X, TrendingDown, PackageCheck, Store, Sparkles } from 'lucide-react';
 
 const SORT_TABS = [
-  { id: 'best', label: 'Best Value' },
-  { id: 'price', label: 'Cheapest Today' },
-  { id: 'pricePerKg', label: 'Lowest €/Kg' },
-  { id: 'stock', label: 'In Stock First' },
+  { id: 'best', labelKey: 'search.tab.best' },
+  { id: 'price', labelKey: 'search.tab.price' },
+  { id: 'pricePerKg', labelKey: 'search.tab.pricePerKg' },
+  { id: 'stock', labelKey: 'search.tab.stock' },
 ] as const;
 
 const STORE_NAMES_DISPLAY = ['Dookan', 'Jamoona', 'Swadesh', 'Namma Markt', 'Angaadi', 'Little India', 'Spice Village', 'Grocera'];
 
 function SearchPageContent() {
+  const { t } = useLang();
   const searchParams = useSearchParams();
   const { filters, setFilters, clearFilters, hasActiveFilters, activeFilterCount } = useSearchFilters();
   const displayQuery = filters.q.trim();
@@ -106,7 +108,6 @@ function SearchPageContent() {
   }, [results, pollCount, fetchResults, filters.q, loading]);
 
   useEffect(() => {
-    // If not refreshing, or no results, or we've reached background poll limit, stop.
     if (!refreshing || !results.length || backgroundPollCount >= 3) {
       if (backgroundPollCount >= 3 && refreshing) {
         setRefreshing(false);
@@ -178,7 +179,7 @@ function SearchPageContent() {
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-masala-text-muted uppercase tracking-wider">
-                  {totalCount} results
+                  {totalCount} {t('search.resultsFor')}
                 </p>
                 <h1 className="text-lg sm:text-2xl font-black text-masala-text leading-tight truncate" style={{ fontFamily: 'Fraunces, serif' }}>
                   &ldquo;{displayQuery}&rdquo;
@@ -188,14 +189,14 @@ function SearchPageContent() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                title="Refresh Prices"
+                title={t('search.refreshPrices')}
                 className={`flex-shrink-0 w-11 h-11 rounded-2xl border border-masala-border bg-white text-masala-text shadow-sm flex items-center justify-center hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 ${refreshing ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <RefreshCw className={`h-4.5 w-4.5 ${refreshing ? 'animate-spin text-masala-primary' : ''}`} style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
 
-            {/* Sort tabs + Filter button - FIXED: sticky below header */}
+            {/* Sort tabs + Filter button */}
             <div className="sticky top-[56px] md:top-20 z-30 bg-masala-bg/90 backdrop-blur-md -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-4 border-b border-masala-border/50 lg:border-none">
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
                 <div className="flex items-center bg-white border border-masala-border rounded-2xl p-1 gap-0.5 shadow-sm flex-shrink-0">
@@ -209,7 +210,7 @@ function SearchPageContent() {
                           : 'text-masala-text-muted hover:text-masala-text'
                       }`}
                     >
-                      {tab.label}
+                      {t(tab.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -223,7 +224,7 @@ function SearchPageContent() {
                   }`}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
-                  Filters
+                  {t('search.filters')}
                   {activeFilterCount > 0 && (
                     <span className="w-5 h-5 rounded-full bg-white text-masala-primary text-[10px] font-black flex items-center justify-center">
                       {activeFilterCount}
@@ -237,27 +238,27 @@ function SearchPageContent() {
               <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
                 <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2.5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-                    <Sparkles className="h-3.5 w-3.5" /> Best Deal
+                    <Sparkles className="h-3.5 w-3.5" /> {t('search.bestDeal')}
                   </p>
-                  <p className="text-sm font-black text-masala-text truncate mt-1">{bestDeal?.product_name ?? 'No in-stock deals'}</p>
+                  <p className="text-sm font-black text-masala-text truncate mt-1">{bestDeal?.product_name ?? t('search.noInStockDeals')}</p>
                 </div>
                 <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <TrendingDown className="h-3.5 w-3.5" /> Lowest Price Per Kg
+                    <TrendingDown className="h-3.5 w-3.5" /> {t('search.lowestPricePerKg')}
                   </p>
                   <p className="text-sm font-black text-masala-primary mt-1">
-                    {lowestPerKg?.price_per_kg ? `€${Number(lowestPerKg.price_per_kg).toFixed(2)}/kg` : 'Not available'}
+                    {lowestPerKg?.price_per_kg ? `€${Number(lowestPerKg.price_per_kg).toFixed(2)}${t('search.perKg')}` : t('search.notAvailable')}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <PackageCheck className="h-3.5 w-3.5" /> In Stock
+                    <PackageCheck className="h-3.5 w-3.5" /> {t('search.inStock')}
                   </p>
-                  <p className="text-sm font-black text-masala-text mt-1">{inStockResults.length} products</p>
+                  <p className="text-sm font-black text-masala-text mt-1">{inStockResults.length} {t('home.stat.products').toLowerCase()}</p>
                 </div>
                 <div className="rounded-2xl border border-masala-border bg-white px-3 py-2.5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted flex items-center gap-1">
-                    <Store className="h-3.5 w-3.5" /> Stores Matched
+                    <Store className="h-3.5 w-3.5" /> {t('search.storesMatched')}
                   </p>
                   <p className="text-sm font-black text-masala-text mt-1">{matchedStoresCount}</p>
                 </div>
@@ -266,90 +267,9 @@ function SearchPageContent() {
           </div>
         )}
 
-        {/* Active filter chips */}
-        {false && hasActiveFilters && displayQuery && (
-          <div className="flex flex-wrap items-center gap-2 mb-6">
-            {filters.stores.map(storeId => {
-              const config = getStoreConfig(storeId);
-              return (
-                <button
-                  key={storeId}
-                  onClick={() => setFilters({ stores: filters.stores.filter(s => s !== storeId) })}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all hover:opacity-80"
-                  style={{ background: config.color, color: config.textColor, borderColor: config.textColor + '30' }}
-                >
-                  {config.label}
-                  <X className="h-3 w-3" />
-                </button>
-              );
-            })}
-            {filters.inStockOnly && (
-              <button
-                onClick={() => setFilters({ inStockOnly: false })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 hover:opacity-80 transition-all"
-              >
-                In Stock <X className="h-3 w-3" />
-              </button>
-            )}
-            {filters.maxPrice < 100 && (
-              <button
-                onClick={() => setFilters({ maxPrice: 100 })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                Max €{filters.maxPrice} <X className="h-3 w-3" />
-              </button>
-            )}
-            {filters.minPrice > 0 && (
-              <button
-                onClick={() => setFilters({ minPrice: 0 })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                Min €{filters.minPrice} <X className="h-3 w-3" />
-              </button>
-            )}
-            {filters.quantity && (
-              <button
-                onClick={() => setFilters({ quantity: '' })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                Qty {filters.quantity} <X className="h-3 w-3" />
-              </button>
-            )}
-            {filters.brands.map((b) => (
-              <button
-                key={b}
-                onClick={() => setFilters({ brands: filters.brands.filter((x) => x !== b) })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                {b} <X className="h-3 w-3" />
-              </button>
-            ))}
-            {filters.types.map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilters({ types: filters.types.filter((x) => x !== t) })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                {t} <X className="h-3 w-3" />
-              </button>
-            ))}
-            {filters.sugar.map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilters({ sugar: filters.sugar.filter((x) => x !== s) })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-masala-pill text-masala-text text-xs font-bold border border-masala-border hover:opacity-80 transition-all"
-              >
-                {s} <X className="h-3 w-3" />
-              </button>
-            ))}            <button onClick={clearFilters} className="text-xs text-masala-text-muted hover:text-masala-primary font-bold px-2 py-1 transition-colors">
-              Clear all
-            </button>
-          </div>
-        )}
-
         {/* Main layout */}
         <div className="flex gap-8">
-          {/* Sidebar (hidden on mobile, but handles its own visibility) */}
+          {/* Sidebar */}
           <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} resultCount={inStockResults.length} />
 
           <div className="flex-1 min-w-0">
@@ -372,7 +292,7 @@ function SearchPageContent() {
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-5 w-1 rounded-full bg-masala-primary" />
                   <p className="text-[11px] font-black uppercase tracking-widest text-masala-primary">
-                    {exactInStockResults.length} Exact {exactInStockResults.length === 1 ? 'Match' : 'Matches'}
+                    {exactInStockResults.length} {exactInStockResults.length === 1 ? t('search.exactMatch') : t('search.exactMatches')}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -397,7 +317,7 @@ function SearchPageContent() {
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-5 w-1 rounded-full bg-masala-border" />
                   <p className="text-[11px] font-black uppercase tracking-widest text-masala-text-muted">
-                    {relatedInStockResults.length} Related Products
+                    {relatedInStockResults.length} {t('search.relatedProducts')}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -420,7 +340,7 @@ function SearchPageContent() {
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-5 w-1 rounded-full bg-red-200" />
                   <p className="text-[11px] font-black uppercase tracking-widest text-red-500">
-                    {outOfStockResults.length} Unavailable Right Now
+                    {outOfStockResults.length} {t('search.unavailableTitle')}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 opacity-90">
@@ -438,7 +358,7 @@ function SearchPageContent() {
               </div>
             )}
 
-            {/* Fallback (if scores missing) */}
+            {/* Fallback */}
             {exactInStockResults.length === 0 && relatedInStockResults.length === 0 && inStockResults.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {inStockResults.map((listing: any, i: number) => (
@@ -470,6 +390,7 @@ function SearchPageContent() {
 function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
   query: string; pollCount: number; elapsedSecs: number; onRetry: () => void;
 }) {
+  const { t } = useLang();
   const progress = Math.min(Math.max(10, (pollCount / 8) * 85 + (elapsedSecs / 30) * 15), 90);
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-8 animate-fade-in">
@@ -482,11 +403,11 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
       </div>
       <div className="text-center space-y-2 max-w-sm px-4">
         <h2 className="text-2xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>
-          Searching for &ldquo;{query}&rdquo;
+          {t('search.searchingFor')} &ldquo;{query}&rdquo;
         </h2>
-        <p className="text-masala-text-muted text-sm">Checking live prices across 8 Indian grocery storesâ€¦</p>
+        <p className="text-masala-text-muted text-sm">{t('search.checkingLive')}</p>
         <span className="inline-flex items-center gap-1.5 text-xs font-black text-masala-primary bg-white px-3 py-1.5 rounded-full border border-masala-border">
-          <Zap className="h-3 w-3" /> {elapsedSecs}s elapsed
+          <Zap className="h-3 w-3" /> {elapsedSecs}s {t('search.elapsed')}
         </span>
       </div>
       <div className="w-full max-w-md space-y-4 px-4">
@@ -511,28 +432,29 @@ function ScrapingProgress({ query, pollCount, elapsedSecs, onRetry }: {
         </div>
       </div>
       <button onClick={onRetry} className="px-6 py-3 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill shadow-sm transition-all min-h-[44px] flex items-center gap-2">
-        Check now â†’
+        {t('search.checkNow')}
       </button>
     </div>
   );
 }
 
 function NoResults({ query, onRefresh }: { query: string; onRefresh: () => void }) {
+  const { t } = useLang();
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in px-4">
-      <span className="text-6xl">ðŸ›’</span>
+      <span className="text-6xl">🛒</span>
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>Not Found in Stores</h2>
+        <h2 className="text-3xl font-black text-masala-text" style={{ fontFamily: 'Fraunces, serif' }}>{t('search.notFoundTitle')}</h2>
         <p className="text-masala-text-muted text-sm max-w-sm">
-          No products for <span className="text-masala-primary font-bold">&quot;{query}&quot;</span>. Try a different search term.
+          {t('search.notFoundDesc').replace('{query}', query)}
         </p>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto px-6 sm:px-0">
         <button onClick={onRefresh} className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-masala-primary text-white text-sm font-black hover:bg-masala-secondary shadow-lg shadow-masala-primary/20 transition-all flex items-center justify-center gap-2 min-h-[48px]">
-          <RefreshCw className="h-4 w-4" /> Try Again
+          <RefreshCw className="h-4 w-4" /> {t('search.tryAgain')}
         </button>
         <a href="/" className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-white border border-masala-border text-sm font-bold text-masala-text hover:bg-masala-pill transition-all min-h-[48px] flex items-center justify-center">
-          Browse Categories
+          {t('search.browseCategories')}
         </a>
       </div>
     </div>
@@ -554,5 +476,3 @@ export default function SearchPage() {
     </Suspense>
   );
 }
-
-

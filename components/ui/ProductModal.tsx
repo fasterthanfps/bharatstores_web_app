@@ -162,6 +162,9 @@ export default function ProductModal({
     };
   }, [activeStoreHistory, activeListing]);
 
+  // Enough history to show the price chart (need at least 3 data points)
+  const hasEnoughHistory = activeStoreHistory.length >= 3;
+
   // Create deep link redirect URL
   const redirectUrl = useMemo(() => {
     if (!activeListing) return '';
@@ -180,7 +183,8 @@ export default function ProductModal({
       {/* Backdrop */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+        className="fixed inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px' }}
       />
 
       {/* Modal Container */}
@@ -189,19 +193,47 @@ export default function ProductModal({
         {/* Header Section */}
         <div className="p-6 pb-4 border-b border-masala-border/60 flex items-start justify-between bg-white/50 backdrop-blur-sm sticky top-0 rounded-t-[2rem] z-20">
           <div className="flex-1 min-w-0 pr-4">
-            <span className="text-[10px] font-black uppercase tracking-widest text-masala-primary/80 bg-masala-primary/5 px-2.5 py-1 rounded-full">
-              Product Analysis
-            </span>
-            <h2 
-              className="text-xl sm:text-2xl font-black text-masala-text mt-2.5 leading-snug line-clamp-2"
-              style={{ fontFamily: 'Fraunces, serif' }}
-            >
-              {loading ? 'Loading Product details...' : product?.name}
+            {/* Top badge row */}
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-masala-primary/10 text-masala-primary text-[10px] font-black uppercase tracking-widest">
+                Product Analysis
+              </span>
+              {storeAnalytics?.isBuyNow && (
+                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-black animate-pulse">
+                  <TrendingDown className="w-3 h-3" /> Best time to buy
+                </span>
+              )}
+            </div>
+
+            {/* Product name */}
+            <h2 className="text-lg sm:text-xl font-black text-masala-text leading-tight"
+              style={{ fontFamily: 'Fraunces, serif' }}>
+              {loading ? '—' : product?.name}
             </h2>
-            {!loading && product?.brand && (
-              <p className="text-xs font-bold text-masala-text-muted mt-1">
-                Brand: <span className="text-masala-text">{product.brand}</span>
-              </p>
+
+            {/* Context line — brand · weight · category */}
+            {!loading && product && (
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {product.brand && product.brand !== product.name && (
+                  <span className="text-xs font-semibold text-masala-text-muted">{product.brand}</span>
+                )}
+                {product.brand && (product.weight || product.weightLabel) && (
+                  <span className="text-masala-border text-xs">·</span>
+                )}
+                {(product.weight || product.weightLabel) && (
+                  <span className="text-xs font-semibold text-masala-text-muted">
+                    {product.weight || product.weightLabel}
+                  </span>
+                )}
+                {product.category && (
+                  <>
+                    <span className="text-masala-border text-xs">·</span>
+                    <span className="px-2 py-0.5 rounded-full bg-masala-bg border border-masala-border text-[10px] font-bold text-masala-text">
+                      {product.category}
+                    </span>
+                  </>
+                )}
+              </div>
             )}
           </div>
           <button 
@@ -235,34 +267,80 @@ export default function ProductModal({
               </button>
             </div>
           ) : (
+            <>
+            {/* Mobile-only top strip */}
+            <div className="md:hidden flex items-center gap-3 px-4 py-3 -mx-6 -mt-6 mb-6 border-b border-masala-border bg-white">
+              <div className="w-14 h-14 flex-shrink-0 bg-masala-muted rounded-xl overflow-hidden flex items-center justify-center p-1">
+                {product?.imageUrl
+                  ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain" />
+                  : <span className="text-2xl">🛒</span>
+                }
+              </div>
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-none flex-1">
+                {product?.prices?.map((p: any) => {
+                  const s = getStoreConfig(p.storeSlug);
+                  const isActive = p.storeSlug === activeStore;
+                  return (
+                    <button key={p.storeSlug}
+                      onClick={() => setActiveStore(p.storeSlug)}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all text-xs ${
+                        isActive ? 'border-masala-primary bg-masala-primary/5' : 'border-masala-border bg-white'
+                      } ${!p.inStock ? 'opacity-50' : ''}`}>
+                      <span className="w-5 h-5 rounded-md text-[8px] font-black flex items-center justify-center"
+                        style={{ background: s.color, color: s.textColor }}>
+                        {s.initials}
+                      </span>
+                      <span className={`font-bold ${isActive ? 'text-masala-primary' : 'text-masala-text'}`}>
+                        €{p.price.toFixed(2)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Left Column: Image, Store Selection & Actions (5 cols) */}
               <div className="lg:col-span-5 space-y-6">
                 
-                {/* Image */}
-                <div className="relative bg-white rounded-3xl border border-masala-border/80 min-h-[210px] flex items-center justify-center p-4 shadow-sm overflow-hidden group">
+                {/* Image — fixed height, no badge inside, store-colored halo */}
+                <div className="flex-shrink-0 h-[200px] bg-white rounded-2xl border border-masala-border flex items-center justify-center p-4 relative overflow-hidden">
+                  {/* Radial gradient bg */}
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#f4efe8_0%,_#ffffff_70%)]" />
+                  {/* Store-colored halo */}
+                  {(() => {
+                    const best = product?.prices?.find((p: any) => p.inStock);
+                    const sc = best ? getStoreConfig(best.storeSlug) : null;
+                    return (
+                      <div
+                        className="absolute inset-4 rounded-xl opacity-20 blur-xl"
+                        style={{ background: sc?.color ?? '#f4efe8' }}
+                      />
+                    );
+                  })()}
                   {product?.imageUrl ? (
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name} 
-                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="relative z-10 max-h-full max-w-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <span className="text-6xl">🛒</span>
-                  )}
-                  {product?.category && (
-                    <span className="absolute bottom-3 left-3 bg-masala-bg/90 backdrop-blur-sm border border-masala-border text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md text-masala-text">
-                      {product.category}
-                    </span>
+                    <span className="text-5xl relative z-10">🛒</span>
                   )}
                 </div>
 
                 {/* Store Tabs selector */}
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-masala-text-muted">
-                    Automatic Similar Product Compare
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-masala-text-muted flex-shrink-0">
+                      🔄 Compare Stores
+                    </p>
+                    <div className="flex-1 h-px bg-masala-border" />
+                    <span className="text-[9px] text-masala-text-muted flex-shrink-0">
+                      {sortedPrices.length} store{sortedPrices.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                   <div className="grid grid-cols-1 gap-2">
                     {sortedPrices.slice(0, 6).map((p: any) => {
                       const isActive = p.storeSlug === activeStore;
@@ -390,7 +468,7 @@ export default function ProductModal({
                   </div>
                 )}
 
-                {/* Pure SVG Sparkline Price History Chart */}
+                {/* Price History Chart or Insights Card */}
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-black uppercase tracking-widest text-masala-text-muted">
@@ -401,15 +479,157 @@ export default function ProductModal({
                     </span>
                   </div>
 
-                  <div className="h-[170px]">
-                    <PriceChart
-                      history={activeStoreHistory}
-                      currentPrice={activeListing?.price ?? 0}
-                      allTimeLow={storeAnalytics?.allTimeLow ?? (activeListing?.price ?? 0)}
-                      allTimeHigh={storeAnalytics?.allTimeHigh ?? (activeListing?.price ?? 0)}
-                    />
-                  </div>
+                  {hasEnoughHistory ? (
+                    <div className="h-[170px]">
+                      <PriceChart
+                        history={activeStoreHistory}
+                        currentPrice={activeListing?.price ?? 0}
+                        allTimeLow={storeAnalytics?.allTimeLow ?? (activeListing?.price ?? 0)}
+                        allTimeHigh={storeAnalytics?.allTimeHigh ?? (activeListing?.price ?? 0)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-masala-border p-4">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-masala-text-muted">Price Insights</p>
+                        <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Tracking started
+                        </span>
+                      </div>
+                      {/* 2×2 insight grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Best store now */}
+                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                          <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Best Store Now</p>
+                          {(() => {
+                            const inStockPrices = product?.prices?.filter((p: any) => p.inStock) ?? [];
+                            const best = inStockPrices.reduce((a: any, b: any) => a.price < b.price ? a : b, inStockPrices[0]);
+                            const sc = best ? getStoreConfig(best.storeSlug) : null;
+                            return best ? (
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-lg text-[9px] font-black flex items-center justify-center flex-shrink-0"
+                                  style={{ background: sc?.color, color: sc?.textColor }}>
+                                  {sc?.initials}
+                                </span>
+                                <div>
+                                  <p className="text-xs font-bold text-masala-text leading-none">{sc?.label}</p>
+                                  <p className="text-sm font-black text-masala-primary leading-none mt-0.5" style={{ fontFamily: 'Fraunces, serif' }}>
+                                    €{best.price.toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : <p className="text-xs text-masala-text-muted">No stock</p>;
+                          })()}
+                        </div>
+                        {/* Price spread */}
+                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                          <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Price Spread</p>
+                          {(() => {
+                            const inStockPrices = product?.prices?.filter((p: any) => p.inStock).map((p: any) => p.price) ?? [];
+                            if (inStockPrices.length < 2) return <p className="text-xs text-masala-text-muted">Only 1 store</p>;
+                            const spread = Math.max(...inStockPrices) - Math.min(...inStockPrices);
+                            return (
+                              <>
+                                <p className="text-sm font-black text-masala-primary" style={{ fontFamily: 'Fraunces, serif' }}>€{spread.toFixed(2)}</p>
+                                <p className="text-[9px] text-masala-text-muted mt-0.5">between {inStockPrices.length} stores</p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        {/* Best €/kg */}
+                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                          <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Best €/kg</p>
+                          {(() => {
+                            const withKg = product?.prices?.filter((p: any) => p.inStock && p.pricePerKg);
+                            if (!withKg?.length) return <p className="text-xs text-masala-text-muted">N/A</p>;
+                            const best = withKg.reduce((a: any, b: any) => a.pricePerKg < b.pricePerKg ? a : b);
+                            return (
+                              <p className="text-sm font-black text-masala-primary" style={{ fontFamily: 'Fraunces, serif' }}>
+                                €{best.pricePerKg.toFixed(2)}<span className="text-xs font-normal text-masala-text-muted">/kg</span>
+                              </p>
+                            );
+                          })()}
+                        </div>
+                        {/* Availability */}
+                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                          <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Availability</p>
+                          {(() => {
+                            const inStock = product?.prices?.filter((p: any) => p.inStock).length ?? 0;
+                            const total = product?.prices?.length ?? 0;
+                            return (
+                              <>
+                                <p className="text-sm font-black text-masala-text">
+                                  {inStock}<span className="text-masala-text-muted font-normal text-xs">/{total}</span>
+                                </p>
+                                <p className="text-[9px] text-masala-text-muted mt-0.5">stores in stock</p>
+                                <div className="mt-1.5 h-1 bg-masala-border rounded-full overflow-hidden">
+                                  <div className="h-full bg-green-500 rounded-full transition-all"
+                                    style={{ width: `${total > 0 ? (inStock / total) * 100 : 0}%` }} />
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-masala-text-muted text-center mt-3 pt-3 border-t border-masala-border/50">
+                        📈 Price history chart will appear after a few days of tracking
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {/* 🔄 Similar Category Alternatives Strip */}
+                {!loading && !error && alternatives.length > 0 && (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-masala-text-muted flex-shrink-0">
+                        🔄 Similar {product?.category}
+                      </p>
+                      <div className="flex-1 h-px bg-masala-border" />
+                      <span className="text-[9px] text-masala-text-muted flex-shrink-0">
+                        {alternatives.length} alternatives found
+                      </span>
+                    </div>
+
+                    {/* Horizontal scrollable strip of max 6 alternatives */}
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-masala-border">
+                      {alternatives.slice(0, 6).map((alt: any) => {
+                        return (
+                          <button
+                            key={alt.id || alt.name}
+                            onClick={() => setProductId(alt.id)}
+                            className="flex-shrink-0 w-[130px] min-w-[120px] bg-white rounded-2xl border border-masala-border p-3 flex flex-col justify-between hover:border-masala-primary/60 hover:shadow-sm transition-all duration-200 text-left active:scale-[0.97]"
+                          >
+                            <div className="space-y-1">
+                              {/* Brand */}
+                              <span className="text-[8px] font-black uppercase tracking-wider text-masala-primary block leading-none">
+                                {alt.brand}
+                              </span>
+                              {/* Name */}
+                              <h4 className="text-[10px] font-bold text-masala-text line-clamp-2 leading-tight min-h-[1.5rem]">
+                                {alt.name}
+                              </h4>
+                            </div>
+
+                            {/* Price details at bottom */}
+                            <div className="mt-2 pt-2 border-t border-masala-border/40 flex items-baseline justify-between">
+                              <span className="text-xs font-black text-masala-primary" style={{ fontFamily: 'Fraunces, serif' }}>
+                                €{alt.bestPrice.toFixed(2)}
+                              </span>
+                              {alt.weightLabel && (
+                                <span className="text-[8px] text-masala-text-muted">
+                                  {alt.weightLabel}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Delivery & Shipping Info */}
                 {deliveryInfo && (
@@ -432,8 +652,34 @@ export default function ProductModal({
                   </div>
                 )}
 
+                {/* Smart Recommendation Banner */}
+                {(() => {
+                  const prices = product?.prices?.filter((p: any) => p.inStock) ?? [];
+                  if (prices.length === 0 || !activeListing) return null;
+                  const best = prices.reduce((a: any, b: any) => a.price < b.price ? a : b);
+                  const isActiveBest = best?.storeSlug === activeStore;
+                  const bestConf = getStoreConfig(best.storeSlug);
+                  return (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold ${
+                      isActiveBest
+                        ? 'bg-green-50 text-green-700 border border-green-100'
+                        : 'bg-amber-50 text-amber-700 border border-amber-100'
+                    }`}>
+                      {isActiveBest ? (
+                        <>✅ You&apos;re viewing the best price available</>
+                      ) : (
+                        <>
+                          💡 <span className="font-black">{bestConf.label}</span> has it for&nbsp;
+                          <span className="font-black">€{best.price.toFixed(2)}</span>
+                          &nbsp;— €{(activeListing.price - best.price).toFixed(2)} cheaper
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Action Buttons Row */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
                   {/* Buy Now (Direct link to active store) */}
                   <a
                     href={redirectUrl}
@@ -489,93 +735,7 @@ export default function ProductModal({
               </div>
 
             </div>
-          )}
-
-          {/* Alternative Brands Comparison Section */}
-          {!loading && !error && alternatives.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-masala-border/60 space-y-4">
-              <div>
-                <h3 className="text-base font-black text-masala-text flex items-center gap-2" style={{ fontFamily: 'Fraunces, serif' }}>
-                  <Sparkles className="h-5 w-5 text-masala-primary" />
-                  Compare Alternative Brands
-                </h3>
-                <p className="text-[11px] text-masala-text-muted">
-                  Automatically comparing similar {product?.category?.toLowerCase() || 'product'} options from other top brands
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {alternatives.map((alt: any) => (
-                  <div 
-                    key={alt.id || alt.name} 
-                    className="bg-white rounded-2xl border border-masala-border/80 p-4 flex flex-col justify-between hover:border-masala-primary/50 transition-all duration-300 shadow-sm"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-black text-masala-text line-clamp-2 min-h-[2rem]">
-                          {alt.name}
-                        </h4>
-                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-masala-primary/5 text-masala-primary">
-                          {alt.brand}
-                        </span>
-                      </div>
-                      {alt.weightLabel && (
-                        <span className="text-[10px] text-masala-text-muted block mt-1">
-                          Pack: {alt.weightLabel}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-masala-border/40 flex items-end justify-between">
-                      <div>
-                        <span className="text-[9px] text-masala-text-muted uppercase font-bold tracking-wider block leading-none mb-1">
-                          Best Price
-                        </span>
-                        <span className="text-lg font-black text-masala-primary" style={{ fontFamily: 'Fraunces, serif' }}>
-                          €{alt.bestPrice.toFixed(2)}
-                        </span>
-                        {alt.bestPricePerKg && (
-                          <span className="text-[9px] text-masala-text-muted block mt-0.5">
-                            €{alt.bestPricePerKg.toFixed(2)}/kg
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick Store Indicator */}
-                      <div className="text-right">
-                        <span className="text-[8px] text-masala-text-muted uppercase font-bold block leading-none mb-1">
-                          Stores
-                        </span>
-                        <div className="flex -space-x-1.5 justify-end">
-                          {alt.prices.map((p: any) => {
-                            const s = getStoreConfig(p.storeSlug);
-                            return (
-                              <span 
-                                key={p.storeSlug}
-                                title={`${s.label}: €${p.price.toFixed(2)}`}
-                                className="w-5 h-5 rounded-full text-[8px] font-black flex items-center justify-center border border-white"
-                                style={{ background: s.color, color: s.textColor }}
-                              >
-                                {s.initials}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Compare within modal action */}
-                    <button
-                      onClick={() => setProductId(alt.id)}
-                      className="mt-3.5 w-full py-2 rounded-xl bg-masala-bg border border-masala-border hover:bg-masala-primary hover:text-white text-masala-text text-[10px] font-black text-center transition-all duration-200 flex items-center justify-center gap-1.5"
-                    >
-                      <span>Analyze Alternative</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </>
           )}
         </div>
 

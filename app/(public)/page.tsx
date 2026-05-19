@@ -1,18 +1,15 @@
-import type { Metadata } from 'next';
+'use client';
+
 import HeroSearch from '@/components/search/HeroSearch';
 import HowItWorks from '@/components/sections/HowItWorks';
 import CategoryGrid from '@/components/sections/CategoryGrid';
 import HeroParticles from '@/components/home/HeroParticles';
 import HeroFloatingBadges from '@/components/home/HeroFloatingBadges';
+import { useLang } from '@/lib/utils/LanguageContext';
 
-export const metadata: Metadata = {
-  title: 'BharatStores.eu – Indian Grocery Price Comparison in Europe',
-  description: 'Compare real-time prices for 5,000+ Indian grocery products across all major stores in Europe. Smart, fast, and 100% free.',
-};
+export default function Home() {
+  const { t } = useLang();
 
-export const revalidate = 3600; // Re-fetch data every hour
-
-export default async function Home() {
   return (
     <main className="min-h-screen bg-masala-bg">
       {/* HERO SECTION - Search First */}
@@ -45,7 +42,7 @@ export default async function Home() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-masala-primary" />
             </span>
             <span className="text-[11px] font-black uppercase tracking-widest text-masala-primary">
-              Live Grocery Comparison · Indian Stores in Europe
+              {t('home.livePill')}
             </span>
           </div>
 
@@ -54,16 +51,15 @@ export default async function Home() {
             className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-masala-text mb-8 tracking-tight leading-[0.9] animate-slide-up"
             style={{ fontFamily: 'Fraunces, serif' }}
           >
-            Find the Best <br />
+            {t('home.headline1')} <br />
             <span className="text-masala-primary italic underline decoration-masala-primary/20 underline-offset-8">
-              Prices in Europe.
+              {t('home.headline2')}
             </span>
           </h1>
 
           {/* Sub-headline */}
           <p className="text-lg sm:text-2xl text-masala-text-muted mb-12 max-w-2xl mx-auto leading-relaxed animate-slide-up animation-delay-200">
-            Compare 5,000+ products across Dookan, Jamoona, Swadesh, and more.{' '}
-            <strong className="text-masala-primary font-semibold">Save up to 40%</strong> on every grocery run in Europe.
+            {t('home.subtitle')}
           </p>
 
           {/* Search */}
@@ -74,13 +70,13 @@ export default async function Home() {
           {/* Trust badges */}
           <div className="mt-10 flex flex-wrap justify-center gap-3 animate-fade-in animation-delay-500">
             {[
-              { icon: '🛡️', text: 'Always free' },
-              { icon: '⚡', text: 'Real-time prices' },
-              { icon: '🏪', text: '8 stores compared' },
-              { icon: '🇮🇳', text: '5,000+ Indian products' },
+              { icon: '🛡️', textKey: 'home.badge.alwaysFree' },
+              { icon: '⚡', textKey: 'home.badge.realtime' },
+              { icon: '🏪', textKey: 'home.badge.stores' },
+              { icon: '🇮🇳', textKey: 'home.badge.products' },
             ].map((badge) => (
-              <span key={badge.text} className="hero-trust-badge">
-                {badge.icon} {badge.text}
+              <span key={badge.textKey} className="hero-trust-badge">
+                {badge.icon} {t(badge.textKey)}
               </span>
             ))}
           </div>
@@ -88,17 +84,17 @@ export default async function Home() {
           {/* Quick Stats */}
           <div className="mt-16 flex flex-wrap justify-center items-center gap-8 sm:gap-12">
             {[
-              { value: '8', label: 'Stores' },
-              { value: '5k+', label: 'Products' },
-              { value: '€0', label: 'Fee' },
-              { value: '40%', label: 'Max Savings' },
+              { value: '8', labelKey: 'home.stat.stores' },
+              { value: '5k+', labelKey: 'home.stat.products' },
+              { value: '€0', labelKey: 'home.stat.fee' },
+              { value: '40%', labelKey: 'home.stat.maxSavings' },
             ].map((stat, i) => (
-              <div key={stat.label} className="flex items-center gap-8 sm:gap-12">
+              <div key={stat.labelKey} className="flex items-center gap-8 sm:gap-12">
                 {i > 0 && <div className="w-px h-8 bg-masala-border opacity-50 hidden sm:block" />}
                 <div className="flex flex-col items-center hero-stat">
                   <span className="text-2xl font-black text-masala-text">{stat.value}</span>
                   <span className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">
-                    {stat.label}
+                    {t(stat.labelKey)}
                   </span>
                 </div>
               </div>

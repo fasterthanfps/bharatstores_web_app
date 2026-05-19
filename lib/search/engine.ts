@@ -94,6 +94,32 @@ function hasTerm(text: string, term: string): boolean {
 
 import { smartTruncateQuery } from './normalize';
 
+function levenshteinDistance(a: string, b: string): number {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // substitution
+                    matrix[i][j - 1] + 1,     // insertion
+                    matrix[i - 1][j] + 1      // deletion
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
 // ── Relevance Scoring ─────────────────────────────────────────────────────────
 /**
  * Scores a listing for relevance to a query.
@@ -198,7 +224,34 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     }
 
     // ── Tier 8: Category match ──────────────────────────────────────────────────
+    const matchedCategory = getCategoryFromQuery(queryLower);
+    if (category && matchedCategory === category) return 85; // Boost category-specific landing pages
     if (category && (category.includes(queryLower) || queryLower.includes(category))) return 25;
+
+    // ── Tier 9: Fuzzy Match (Typo Tolerance) ───────────────────────────────────
+    if (coreTokens.length > 0) {
+        let fuzzyMatches = 0;
+        for (const qt of coreTokens) {
+            if (qt.length < 4) continue; // Only fuzzy match longer words
+            const hasFuzzyMatch = significantTokens.some(nt => {
+                if (Math.abs(nt.length - qt.length) > 2) return false;
+                const dist = levenshteinDistance(qt, nt);
+                return dist <= 2 && dist <= Math.floor(qt.length / 3);
+            });
+            if (hasFuzzyMatch) fuzzyMatches++;
+        }
+        if (fuzzyMatches > 0 && fuzzyMatches >= Math.ceil(coreTokens.length / 2)) {
+            return 45 + (fuzzyMatches * 5);
+        }
+    } else if (queryLower.length >= 4) {
+        // Single word query typo tolerance
+        const hasFuzzyMatch = significantTokens.some(nt => {
+            if (Math.abs(nt.length - queryLower.length) > 2) return false;
+            const dist = levenshteinDistance(queryLower, nt);
+            return dist <= 2 && dist <= Math.floor(queryLower.length / 3);
+        });
+        if (hasFuzzyMatch) return 45;
+    }
 
     return 0;
 }
@@ -247,12 +300,37 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
         });
 
         const best = sortedGroup[0];
+        
+        // Find the first valid image in the group
+        let validImage = sortedGroup.find((l: any) => l.image_url && l.image_url.trim() !== '')?.image_url;
+
+        // Fallback logic: if no image in the exact group, borrow one from a highly similar product
+        if (!validImage || validImage.trim() === '') {
+            const bestTokens = (best.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
+            if (bestTokens.length >= 2) {
+                const fallbackItem = scored.find(other => {
+                    if (!other.image_url || other.image_url.trim() === '') return false;
+                    const otherTokens = (other.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
+                    let overlap = 0;
+                    for (const t of bestTokens) {
+                        if (otherTokens.includes(t)) overlap++;
+                    }
+                    // Require at least 2 matching tokens, or 3 if the product name has many tokens
+                    const requiredOverlap = Math.max(2, Math.min(3, Math.ceil(bestTokens.length / 2)));
+                    return overlap >= requiredOverlap;
+                });
+                if (fallbackItem) {
+                    validImage = fallbackItem.image_url;
+                }
+            }
+        }
+
         return {
             id: best.product_id || best.id,
             product_name: best.product_name,
             product_slug: best.product_slug,
             product_category: best.product_category,
-            image_url: best.image_url,
+            image_url: validImage || best.image_url,
             _score: best._score,
             bestPrice: Number(best.price),
             bestStore: best.store_name,
@@ -432,19 +510,40 @@ export async function saveAndReturnListings(
 export function inferCategory(name: string): string {
     const combined = name.toLowerCase();
     const hasWord = (regex: RegExp) => regex.test(combined);
-
+    if (hasWord(/\b(rusk|rusks|toastea|toast|drycake)\b/)) return 'snacks';
     if (hasWord(/\b(sweet|mithai|halwa|ladoo|barfi|pedha|rasgulla|gulab\s+jamun|kheer|dessert)\b/)) return 'sweets';
     if (hasWord(/\b(paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi|cheese)\b/)) return 'dairy';
     if (hasWord(/\b(rice|chawal|basmati|sona|sonamasoori|poha)\b/)) return 'rice';
     if (hasWord(/\b(atta|aata|flour|besan|maida|sooji|suji|rava|semolina)\b/)) return 'flour';
     if (hasWord(/\b(dal|lentil|bean|beans|chana|toor|moong|masoor|rajma|lobia|urad|kabuli)\b/)) return 'lentils';
+    if (hasWord(/\b(soap|shampoo|conditioner|toothpaste|toothbrush|hand\s*wash|face\s*wash|body\s*wash|dish\s*wash|cleaner|detergent|scrub|lotion|moisturizer|cream|gel|hair\s*oil|hair\s*cream|hair\s*dye|hair\s*colour|henna|mehendi|talc|talcum|baby\s*powder|face\s*powder|sanitizer|disinfectant|harpic|colgate|pepsodent|sensodyne|pears|dettol|lifebuoy|dove|lux|fiama|cinthol|hamam|mysore\s*sandal|medimix|santoor|margo|himalaya|neem\s*soap|shikakai|reetha|ayur)\b/)) return 'care';
+    if (hasWord(/\b(agarbatti|incense|dhoop|pooja|puja|diya|camphor|kapoor|cotton\s+wicks|matchbox)\b/)) return 'pooja';
     if (hasWord(/\b(ghee|butter\s+ghee)\b/)) return 'oil-ghee';
     if (hasWord(/\b(oil|cooking\s+oil|mustard\s+oil|coconut\s+oil|sunflower\s+oil)\b/)) return 'oil-ghee';
+    if (hasWord(/\b(chai\s+masala|tea\s+masala|tea\s+spice)\b/)) return 'spices';
+    if (hasWord(/\b(tea|chai|coffee|drink|juice|beverage|cocoa|premix)\b/) && !hasWord(/\b(biscuit|cookie|puri|cracker|chips)\b/)) return 'beverages';
     if (hasWord(/\b(spice|masala|turmeric|cumin|coriander|cardamom|pepper|chilli|haldi|jeera|rai|mustard\s+seeds|fennel|methi|fenugreek|hing|asafoetida|cinnamon|cloves|elaichi|ajwain)\b/)) return 'spices';
-    if (hasWord(/\b(tea|chai|coffee)\b/)) return 'beverages';
-    if (hasWord(/\b(snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|mix|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one)\b/)) return 'snacks';
+    if (hasWord(/\b(snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|mix|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one|puri|crackers)\b/)) return 'snacks';
     if (hasWord(/\b(pickle|chutney|achaar|sauce|paste|ketchup|spread)\b/)) return 'condiments';
     if (hasWord(/\b(lemon|lime|tomato|onion|potato|vegetable|fruit|nimbu|ginger|garlic)\b/)) return 'fresh-produce';
     if (hasWord(/\b(frozen)\b/)) return 'frozen';
     return 'general';
+}
+
+export function getCategoryFromQuery(queryLower: string): string | null {
+    const q = queryLower.trim();
+    if (q === 'home care' || q === 'personal care' || q === 'beauty care' || q === 'care' || q === 'personal & home care' || q === 'body care') return 'care';
+    if (q === 'pooja items' || q === 'pooja') return 'pooja';
+    if (q === 'ready to eat' || q === 'ready-to-eat' || q === 'instant' || q === 'instant food') return 'instant';
+    if (q === 'wheat flour' || q === 'flour mixes' || q === 'flour' || q === 'atta') return 'flour';
+    if (q === 'basmati rice' || q === 'ponni rice' || q === 'rice' || q === 'basmati') return 'rice';
+    if (q === 'spices masala' || q === 'spices' || q === 'masala') return 'spices';
+    if (q === 'indian sweets' || q === 'sweets' || q === 'mithai') return 'sweets';
+    if (q === 'namkeen snacks' || q === 'snacks' || q === 'namkeen') return 'snacks';
+    if (q === 'pickles chutney' || q === 'pickles' || q === 'chutney') return 'condiments';
+    if (q === 'tea coffee' || q === 'beverages' || q === 'drinks') return 'beverages';
+    if (q === 'dal' || q === 'lentils' || q === 'pulses') return 'lentils';
+    if (q === 'dairy' || q === 'milk' || q === 'paneer') return 'dairy';
+    if (q === 'frozen' || q === 'frozen food') return 'frozen';
+    return null;
 }

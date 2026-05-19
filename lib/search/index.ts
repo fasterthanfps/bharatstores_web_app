@@ -2,7 +2,7 @@
 // Wraps the existing engine.ts with the typed interface from Prompt 7.
 
 import { normalizeQuery, removeStopWords } from './normalize';
-import { scoreRelevance, sortByRelevance, splitExactVsRelated } from './engine';
+import { scoreRelevance, sortByRelevance, splitExactVsRelated, SYNONYM_MAP } from './engine';
 import type { SearchOptions, ScoredProduct } from '@/lib/types';
 
 export { normalizeQuery, removeStopWords };
@@ -24,7 +24,6 @@ export { getSuggestions } from './suggest';
  */
 export function scoreProduct(product: any, query: string): number {
   const q = normalizeQuery(query);
-  const SYNONYM_MAP: Record<string, string[]> = {};
   const synonyms = SYNONYM_MAP[q] ?? [];
   return scoreRelevance(product, q, synonyms);
 }
@@ -42,7 +41,6 @@ export function searchProducts(
   const { minScore = 1, limit = 100, storeFilter = [], inStockOnly = false, sortBy = 'best' } = opts;
 
   const q = normalizeQuery(query);
-  const SYNONYM_MAP: Record<string, string[]> = {};
   const synonyms = SYNONYM_MAP[q] ?? [];
 
   // Determine sort column for price-based sorting
