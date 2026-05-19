@@ -179,7 +179,7 @@ export default function ProductModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start sm:items-center justify-center p-4 sm:p-6 md:p-10">
+    <div className="fixed inset-0 z-[100] overflow-y-auto flex items-start sm:items-center justify-center p-4 sm:p-6 md:p-10">
       {/* Backdrop */}
       <div 
         onClick={onClose}
