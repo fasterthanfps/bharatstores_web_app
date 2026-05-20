@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart, Search, ArrowLeft, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Logo from '@/components/ui/Logo';
 import LanguageToggle from '@/components/layout/LanguageToggle';
@@ -76,20 +76,26 @@ export default function Header() {
 
   return (
     <>
-      <header className={`sticky top-0 z-50 bg-white shadow-sm ${isSearch ? 'h-11 md:h-20' : ''}`}>
+      <header className={`sticky top-0 z-50 bg-white shadow-sm ${isSearch ? 'h-16 md:h-20' : ''}`}>
         {isSearch ? (
           <>
             {/* Mobile search header: visible below md */}
             <div className="md:hidden h-full px-3 flex items-center gap-2 w-full">
-              <Link href="/" className="flex-shrink-0 flex items-center gap-0.5">
-                <span className="text-masala-primary font-black text-lg" style={{ fontFamily: 'Fraunces, serif' }}>B</span>
-                <span className="text-masala-text-muted text-[10px] font-black" style={{ fontFamily: 'Fraunces, serif' }}>.eu</span>
-              </Link>
+              {/* Back navigation button */}
+              <button
+                onClick={() => router.push('/')}
+                className="flex-shrink-0 p-2 rounded-2xl hover:bg-masala-muted text-masala-text hover:text-masala-primary transition-all active:scale-90"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+              </button>
+
+              {/* Enhanced Search Input */}
               <div className="flex-1 relative flex items-center">
                 <form onSubmit={handleMobileSearch} className="w-full relative flex items-center">
                   <Search
                     className="absolute left-3.5 text-masala-text-muted pointer-events-none"
-                    style={{ width: '15px', height: '15px' }}
+                    style={{ width: '18px', height: '18px' }}
                   />
                   <input
                     ref={mobileInputRef}
@@ -99,10 +105,35 @@ export default function Header() {
                     value={mobileSearchQuery}
                     onChange={e => setMobileSearchQuery(e.target.value)}
                     placeholder="Search Indian groceries…"
-                    className="w-full h-8 pl-9 pr-3 rounded-xl bg-masala-muted/50 border border-masala-border text-[13px] font-medium text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
+                    className="w-full h-11 pl-10 pr-9 rounded-2xl bg-masala-muted/30 border border-masala-border/80 text-[14px] font-medium text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:ring-2 focus:ring-masala-primary/10 focus:border-masala-primary focus:bg-white transition-all shadow-sm"
                   />
+                  {mobileSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setMobileSearchQuery('')}
+                      className="absolute right-3 p-1 rounded-full text-masala-text-muted hover:text-masala-primary hover:bg-masala-muted/50 active:scale-90 transition-all"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </button>
+                  )}
                 </form>
               </div>
+
+              {/* Mobile: Cart button */}
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-masala-muted/30 text-masala-text hover:text-masala-primary hover:bg-masala-muted/50 active:scale-90 transition-all flex-shrink-0"
+                aria-label="Open Smart Cart"
+              >
+                <ShoppingCart className="h-[20px] w-[20px]" />
+                {mounted && totalItems > 0 && (
+                  <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 rounded-full bg-masala-primary text-white text-[9px] font-black flex items-center justify-center px-1 shadow-sm">
+                    {totalItems > 9 ? '9+' : totalItems}
+                  </span>
+                )}
+              </button>
+
               <HamburgerMenu />
             </div>
 

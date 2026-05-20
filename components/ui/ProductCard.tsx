@@ -121,8 +121,9 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
               <p className="text-white text-[11px] font-black leading-none truncate max-w-[60px]">{bestStorePrice.weight_label || '1 pc'}</p>
             </div>
 
-            {/* Buy Now button */}
-            <div onClick={e => e.stopPropagation()}>
+            {/* Action buttons (Buy Now + Smart Cart Controls) */}
+            <div className="flex items-center gap-1 z-20" onClick={e => e.stopPropagation()}>
+              {/* Buy Now button */}
               <a
                 href={buildRedirectUrl({
                   productId: bestStorePrice.id || listing.id,
@@ -132,12 +133,53 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl
-                  bg-masala-primary text-white text-xs font-black shadow-lg
+                className="flex items-center justify-center px-3.5 py-2 rounded-xl
+                  bg-masala-primary text-white text-[11px] font-black shadow-lg
                   hover:bg-masala-secondary hover:shadow-masala-primary/10 hover:scale-[1.03] active:scale-95 transition-all duration-200"
               >
                 <span>Buy Now</span>
               </a>
+
+              {/* Add to Smart Cart / Quantity controls */}
+              {!inCart ? (
+                <button
+                  onClick={() => addItem({
+                    productId: listing.id,
+                    productName: listing.product_name,
+                    imageUrl: listing.image_url ?? '',
+                    storeSlug: storeSlug,
+                    storeName: storeConfig.label,
+                    price: currentPrice,
+                    weight: bestStorePrice.weight_label ?? '',
+                    url: bestStorePrice.product_url,
+                    storeHandle: bestStorePrice.store_handle,
+                    variantId: bestStorePrice.variant_id,
+                  })}
+                  className="flex items-center justify-center w-8 h-8 rounded-xl
+                    bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg active:scale-90 transition-all duration-200 flex-shrink-0"
+                  title="Add to Smart Cart"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                </button>
+              ) : (
+                <div className="flex items-center bg-emerald-600 text-white rounded-xl overflow-hidden shadow-lg h-8 flex-shrink-0">
+                  <button
+                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 1) - 1)}
+                    className="w-7 h-full flex items-center justify-center hover:bg-emerald-700 transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                  </button>
+                  <span className="text-[11px] font-black min-w-[16px] text-center px-0.5 select-none">
+                    {cartItem?.quantity}
+                  </span>
+                  <button
+                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 0) + 1)}
+                    className="w-7 h-full flex items-center justify-center hover:bg-emerald-700 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
