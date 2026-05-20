@@ -19,14 +19,30 @@ export async function GET(request: NextRequest) {
 
     // Fetch the listing to get the original product URL and price
     // We use listing.id (passed as pid) to find the correct entry
-    const { data: listing } = await supabase
+    let { data: listing } = await supabase
       .from('listings')
       .select('id, product_url, price, store_name')
       .eq('id', productId)
       .maybeSingle();
 
+    // Fallback: if not found, it might be a parent product ID. Look up by product_id and storeSlug.
+    if (!listing?.product_url && storeSlug) {
+      const { data: listings } = await supabase
+        .from('listings')
+        .select('id, product_url, price, store_name')
+        .eq('product_id', productId);
+      
+      if (listings && listings.length > 0) {
+        // Find the listing whose store name matches storeSlug
+        const matched = listings.find((l: any) => l.store_name.toLowerCase().replace(/\s+/g, '') === storeSlug);
+        if (matched) {
+          listing = matched;
+        }
+      }
+    }
+
     if (!listing?.product_url) {
-      console.warn(`[redirect] Listing not found or missing URL for ID: ${productId}`);
+      console.warn(`[redirect] Listing not found or missing URL for ID: ${productId} and store: ${storeSlug}`);
       // Fallback: redirect to homepage if product not found
       return NextResponse.redirect(new URL('/', request.url));
     }

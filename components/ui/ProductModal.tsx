@@ -169,7 +169,7 @@ export default function ProductModal({
   const redirectUrl = useMemo(() => {
     if (!activeListing) return '';
     return buildRedirectUrl({
-      productId,
+      productId: activeListing.id || productId, // Use the specific listing ID if available, fallback to product ID
       storeSlug: activeStore,
       searchQuery,
       position,
@@ -183,20 +183,20 @@ export default function ProductModal({
       {/* Backdrop */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
-        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-fade-in"
+        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl bg-[#FAF7F2] rounded-[2rem] border border-[#E8E0D4] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] flex flex-col z-10 animate-scale-in duration-200 my-auto">
+      <div className="relative w-full max-w-5xl bg-gradient-to-b from-[#FAF9F6] to-[#F5ECE0] rounded-[2.5rem] border border-white/80 shadow-[0_32px_80px_-20px_rgba(28,20,16,0.35),_inset_0_1px_1px_rgba(255,255,255,0.7)] flex flex-col z-10 animate-scale-in duration-300 my-auto overflow-hidden">
         
         {/* Header Section */}
-        <div className="p-6 pb-4 border-b border-masala-border/60 flex items-start justify-between bg-white/50 backdrop-blur-sm sticky top-0 rounded-t-[2rem] z-20">
+        <div className="p-6 pb-4 border-b border-[#EAE3D8] flex items-start justify-between bg-white/40 backdrop-blur-md sticky top-0 rounded-t-[2.5rem] z-20">
           <div className="flex-1 min-w-0 pr-4">
             {/* Top badge row */}
             <div className="flex items-center gap-2 mb-1.5">
               <span className="px-2.5 py-0.5 rounded-full bg-masala-primary/10 text-masala-primary text-[10px] font-black uppercase tracking-widest">
-                Product Analysis
+                Product Comparison
               </span>
               {storeAnalytics?.isBuyNow && (
                 <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-black animate-pulse">
@@ -206,7 +206,7 @@ export default function ProductModal({
             </div>
 
             {/* Product name */}
-            <h2 className="text-lg sm:text-xl font-black text-masala-text leading-tight"
+            <h2 className="text-lg sm:text-2xl font-black text-masala-text leading-tight"
               style={{ fontFamily: 'Fraunces, serif' }}>
               {loading ? '—' : product?.name}
             </h2>
@@ -228,7 +228,7 @@ export default function ProductModal({
                 {product.category && (
                   <>
                     <span className="text-masala-border text-xs">·</span>
-                    <span className="px-2 py-0.5 rounded-full bg-masala-bg border border-masala-border text-[10px] font-bold text-masala-text">
+                    <span className="px-2 py-0.5 rounded-full bg-masala-bg border border-masala-border/60 text-[10px] font-bold text-masala-text">
                       {product.category}
                     </span>
                   </>
@@ -238,7 +238,7 @@ export default function ProductModal({
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 rounded-full border border-masala-border/60 bg-white flex items-center justify-center text-masala-text hover:border-masala-primary hover:text-masala-primary transition-all active:scale-90 flex-shrink-0"
+            className="w-10 h-10 rounded-full border border-masala-border/40 bg-white/95 backdrop-blur-sm flex items-center justify-center text-masala-text hover:border-masala-primary hover:text-masala-primary hover:rotate-90 hover:scale-105 active:scale-95 shadow-sm transition-all duration-300 flex-shrink-0"
             aria-label="Close details"
           >
             <X className="h-5 w-5" />
@@ -304,17 +304,17 @@ export default function ProductModal({
               {/* Left Column: Image, Store Selection & Actions (5 cols) */}
               <div className="lg:col-span-5 space-y-6">
                 
-                {/* Image — fixed height, no badge inside, store-colored halo */}
-                <div className="flex-shrink-0 h-[200px] bg-white rounded-2xl border border-masala-border flex items-center justify-center p-4 relative overflow-hidden">
+                {/* Image — fixed height, glowing brand color light halo */}
+                <div className="flex-shrink-0 h-[220px] bg-white rounded-3xl border border-masala-border/40 flex items-center justify-center p-4 relative overflow-hidden shadow-inner">
                   {/* Radial gradient bg */}
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#f4efe8_0%,_#ffffff_70%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#faf6ef_0%,_#ffffff_80%)]" />
                   {/* Store-colored halo */}
                   {(() => {
                     const best = product?.prices?.find((p: any) => p.inStock);
                     const sc = best ? getStoreConfig(best.storeSlug) : null;
                     return (
                       <div
-                        className="absolute inset-4 rounded-xl opacity-20 blur-xl"
+                        className="absolute inset-4 rounded-xl opacity-25 blur-2xl transition-all duration-500"
                         style={{ background: sc?.color ?? '#f4efe8' }}
                       />
                     );
@@ -323,7 +323,7 @@ export default function ProductModal({
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="relative z-10 max-h-full max-w-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
+                      className="relative z-10 max-h-full max-w-full object-contain drop-shadow-xl hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
                     <span className="text-5xl relative z-10">🛒</span>
@@ -349,30 +349,36 @@ export default function ProductModal({
                         <button
                           key={p.storeSlug}
                           onClick={() => setActiveStore(p.storeSlug)}
-                          className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
+                          className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
                             isActive
-                              ? 'bg-white border-masala-primary shadow-sm scale-[1.02]'
-                              : 'bg-white/50 border-masala-border/60 hover:bg-white hover:border-masala-border'
+                              ? 'bg-white border-masala-primary shadow-[0_4px_16px_rgba(139,32,32,0.08)] scale-[1.03] z-10'
+                              : 'bg-white/40 border-masala-border/50 hover:bg-white hover:border-masala-border hover:scale-[1.01]'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          {isActive && (
+                            <div 
+                              className="absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300"
+                              style={{ background: s.color }}
+                            />
+                          )}
+                          <div className={`flex items-center gap-3 ${isActive ? 'pl-1.5' : ''}`}>
                             <span 
-                              className="w-7 h-7 rounded-xl text-[10px] font-black flex items-center justify-center"
+                              className="w-7 h-7 rounded-xl text-[10px] font-black flex items-center justify-center shadow-sm"
                               style={{ background: s.color, color: s.textColor }}
                             >
                               {s.initials}
                             </span>
                             <div className="text-left">
-                              <span className="text-xs font-bold text-masala-text block leading-none">
+                              <span className="text-xs font-black text-masala-text block leading-none">
                                 {s.label}
                               </span>
                               {!p.isExactMatch && (
-                                <span className="text-[9px] text-amber-700 font-black uppercase tracking-wide mt-0.5 block">
+                                <span className="text-[9px] text-amber-700 font-bold uppercase tracking-wide mt-0.5 block">
                                   Similar Match
                                 </span>
                               )}
                               {!p.inStock && (
-                                <span className="text-[9px] text-red-500 font-black uppercase tracking-wide mt-0.5 block">
+                                <span className="text-[9px] text-red-500 font-bold uppercase tracking-wide mt-0.5 block">
                                   Out of Stock
                                 </span>
                               )}
@@ -401,8 +407,12 @@ export default function ProductModal({
                 
                 {/* Store Analytics Overview */}
                 {activeListing && (
-                  <div className="bg-white rounded-3xl border border-masala-border p-5 space-y-4 shadow-sm">
-                    <div className="flex items-start justify-between">
+                  <div className="bg-gradient-to-br from-white to-[#FAF6EE] rounded-[2rem] border border-white/60 p-6 space-y-4 shadow-[0_8px_24px_rgba(28,20,16,0.03)] relative overflow-hidden">
+                    <div 
+                      className="absolute right-0 top-0 w-32 h-32 rounded-full opacity-[0.04] blur-2xl pointer-events-none"
+                      style={{ background: storeConfig?.color }}
+                    />
+                    <div className="flex items-start justify-between relative z-10">
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-masala-text-muted block">
                           Selected Store Best Offer
@@ -412,7 +422,7 @@ export default function ProductModal({
                             €{activeListing.price.toFixed(2)}
                           </span>
                           {activeListing.pricePerKg && (
-                            <span className="text-xs text-masala-text-muted">
+                            <span className="text-xs text-masala-text-muted font-semibold">
                               (€{activeListing.pricePerKg.toFixed(2)}/kg)
                             </span>
                           )}
@@ -421,7 +431,7 @@ export default function ProductModal({
 
                       {/* Recommend Buy Badge */}
                       {storeAnalytics?.isBuyNow && (
-                        <div className="bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-2xl border border-emerald-100 flex items-center gap-1.5 text-xs font-black shadow-sm animate-pulse">
+                        <div className="bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full border border-emerald-100/50 flex items-center gap-1.5 text-xs font-black shadow-sm animate-pulse">
                           <TrendingDown className="h-4 w-4" />
                           <span>🔥 Best Time to Buy!</span>
                         </div>
@@ -430,28 +440,28 @@ export default function ProductModal({
 
                     {/* Quick Analytics Cards */}
                     {storeAnalytics && (
-                      <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-masala-border/60">
-                        <div className="bg-masala-bg/40 p-2.5 rounded-2xl text-center border border-masala-border/40">
-                          <span className="text-[9px] font-bold text-masala-text-muted uppercase block mb-1">
+                      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-masala-border/40 relative z-10">
+                        <div className="bg-[#FBF9F6] p-3 rounded-2xl text-center border border-masala-border/30 hover:border-masala-primary/30 transition-colors shadow-sm">
+                          <span className="text-[9px] font-bold text-masala-text-muted uppercase block mb-1 tracking-wider">
                             30d Avg Price
                           </span>
-                          <span className="text-sm font-black text-masala-text">
+                          <span className="text-base font-black text-masala-text">
                             €{storeAnalytics.avg30d.toFixed(2)}
                           </span>
                         </div>
-                        <div className="bg-emerald-50/20 p-2.5 rounded-2xl text-center border border-emerald-100/30">
-                          <span className="text-[9px] font-bold text-emerald-600/80 uppercase block mb-1">
+                        <div className="bg-emerald-50/30 p-3 rounded-2xl text-center border border-emerald-100/50 hover:border-emerald-300/30 transition-colors shadow-sm">
+                          <span className="text-[9px] font-bold text-emerald-600 uppercase block mb-1 tracking-wider">
                             All-Time Low
                           </span>
-                          <span className="text-sm font-black text-emerald-600">
+                          <span className="text-base font-black text-emerald-600">
                             €{storeAnalytics.allTimeLow.toFixed(2)}
                           </span>
                         </div>
-                        <div className="bg-red-50/20 p-2.5 rounded-2xl text-center border border-red-100/30">
-                          <span className="text-[9px] font-bold text-red-500/80 uppercase block mb-1">
+                        <div className="bg-red-50/30 p-3 rounded-2xl text-center border border-red-100/50 hover:border-red-300/30 transition-colors shadow-sm">
+                          <span className="text-[9px] font-bold text-red-500 uppercase block mb-1 tracking-wider">
                             All-Time High
                           </span>
-                          <span className="text-sm font-black text-red-500">
+                          <span className="text-base font-black text-red-500">
                             €{storeAnalytics.allTimeHigh.toFixed(2)}
                           </span>
                         </div>
@@ -460,7 +470,7 @@ export default function ProductModal({
 
                     {/* Savings Insights */}
                     {storeAnalytics && storeAnalytics.percentDifference > 0 && (
-                      <p className="text-[11px] font-bold text-emerald-600 bg-emerald-50/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-emerald-100/20">
+                      <p className="text-[11px] font-bold text-emerald-600 bg-emerald-50/40 px-3.5 py-2.5 rounded-xl flex items-center gap-2 border border-emerald-100/30 relative z-10">
                         <Sparkles className="h-3.5 w-3.5" />
                         Save {storeAnalytics.percentDifference.toFixed(1)}% compared to the 30-day average price for this store!
                       </p>
@@ -501,7 +511,7 @@ export default function ProductModal({
                       {/* 2×2 insight grid */}
                       <div className="grid grid-cols-2 gap-2">
                         {/* Best store now */}
-                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                        <div className="bg-[#FAF8F5] rounded-xl p-3 border border-masala-border/30">
                           <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Best Store Now</p>
                           {(() => {
                             const inStockPrices = product?.prices?.filter((p: any) => p.inStock) ?? [];
@@ -524,7 +534,7 @@ export default function ProductModal({
                           })()}
                         </div>
                         {/* Price spread */}
-                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                        <div className="bg-[#FAF8F5] rounded-xl p-3 border border-masala-border/30">
                           <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Price Spread</p>
                           {(() => {
                             const inStockPrices = product?.prices?.filter((p: any) => p.inStock).map((p: any) => p.price) ?? [];
@@ -539,7 +549,7 @@ export default function ProductModal({
                           })()}
                         </div>
                         {/* Best €/kg */}
-                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                        <div className="bg-[#FAF8F5] rounded-xl p-3 border border-masala-border/30">
                           <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Best €/kg</p>
                           {(() => {
                             const withKg = product?.prices?.filter((p: any) => p.inStock && p.pricePerKg);
@@ -553,7 +563,7 @@ export default function ProductModal({
                           })()}
                         </div>
                         {/* Availability */}
-                        <div className="bg-masala-bg/40 rounded-xl p-3">
+                        <div className="bg-[#FAF8F5] rounded-xl p-3 border border-masala-border/30">
                           <p className="text-[9px] font-black uppercase text-masala-text-muted mb-1">Availability</p>
                           {(() => {
                             const inStock = product?.prices?.filter((p: any) => p.inStock).length ?? 0;
@@ -600,7 +610,7 @@ export default function ProductModal({
                           <button
                             key={alt.id || alt.name}
                             onClick={() => setProductId(alt.id)}
-                            className="flex-shrink-0 w-[130px] min-w-[120px] bg-white rounded-2xl border border-masala-border p-3 flex flex-col justify-between hover:border-masala-primary/60 hover:shadow-sm transition-all duration-200 text-left active:scale-[0.97]"
+                            className="flex-shrink-0 w-[140px] min-w-[130px] bg-white/95 rounded-2xl border border-masala-border/50 p-3.5 flex flex-col justify-between hover:border-masala-primary/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-left active:scale-[0.97]"
                           >
                             <div className="space-y-1">
                               {/* Brand */}
@@ -633,7 +643,7 @@ export default function ProductModal({
 
                 {/* Delivery & Shipping Info */}
                 {deliveryInfo && (
-                  <div className="bg-white rounded-3xl border border-masala-border p-3 flex items-center gap-3 shadow-sm">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-masala-border/40 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 flex-shrink-0">
                       <Truck className="h-5 w-5" />
                     </div>
@@ -660,10 +670,10 @@ export default function ProductModal({
                   const isActiveBest = best?.storeSlug === activeStore;
                   const bestConf = getStoreConfig(best.storeSlug);
                   return (
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold ${
+                    <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold ${
                       isActiveBest
-                        ? 'bg-green-50 text-green-700 border border-green-100'
-                        : 'bg-amber-50 text-amber-700 border border-amber-100'
+                        ? 'bg-green-50/80 text-green-700 border border-green-100'
+                        : 'bg-amber-50/80 text-amber-700 border border-amber-100'
                     }`}>
                       {isActiveBest ? (
                         <>✅ You&apos;re viewing the best price available</>
@@ -679,13 +689,13 @@ export default function ProductModal({
                 })()}
 
                 {/* Action Buttons Row */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                   {/* Buy Now (Direct link to active store) */}
                   <a
                     href={redirectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 h-12 rounded-2xl bg-masala-primary hover:bg-masala-secondary text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-masala-primary/20 active:scale-[0.98] transition-all"
+                    className="flex-grow sm:flex-1 h-12 rounded-2xl bg-masala-primary hover:bg-masala-secondary text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-masala-primary/10 active:scale-[0.98] transition-all duration-300"
                   >
                     <span>Buy on {storeConfig?.label}</span>
                     <ExternalLink className="h-4 w-4" />
@@ -712,10 +722,10 @@ export default function ProductModal({
                         });
                       }
                     }}
-                    className={`h-12 px-6 rounded-2xl border transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-xs font-bold ${
+                    className={`h-12 px-6 rounded-2xl border transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 text-xs font-black ${
                       isSelectedInCart
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                        : 'bg-white border-masala-border text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-transparent text-white shadow-md shadow-emerald-500/10'
+                        : 'bg-white border-masala-border text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200'
                     }`}
                   >
                     {isSelectedInCart ? (

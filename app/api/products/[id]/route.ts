@@ -233,6 +233,7 @@ export async function GET(
         || normalizedListingName === normalizedProductName;
 
       return {
+        id: l.id,
         storeSlug: slug,
         price: Number(l.price),
         pricePerKg: l.price_per_kg ? Number(l.price_per_kg) : null,

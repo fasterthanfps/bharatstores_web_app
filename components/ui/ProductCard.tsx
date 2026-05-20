@@ -121,48 +121,23 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
               <p className="text-white text-[11px] font-black leading-none truncate max-w-[60px]">{bestStorePrice.weight_label || '1 pc'}</p>
             </div>
 
-            {/* ADD / quantity control */}
+            {/* Buy Now button */}
             <div onClick={e => e.stopPropagation()}>
-              {!inCart ? (
-                <button
-                  onClick={() => addItem({
-                    productId: listing.id,
-                    productName: listing.product_name,
-                    imageUrl: listing.image_url ?? '',
-                    storeSlug: storeSlug,
-                    storeName: storeConfig.label,
-                    price: currentPrice,
-                    weight: bestStorePrice.weight_label ?? '',
-                    url: bestStorePrice.product_url,
-                    storeHandle: bestStorePrice.store_handle,
-                    variantId: bestStorePrice.variant_id,
-                  })}
-                  className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl
-                    bg-masala-primary text-white text-xs font-black shadow-lg
-                    hover:bg-masala-secondary active:scale-95 transition-all add-btn-tap"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>ADD</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-1 bg-masala-primary rounded-xl overflow-hidden shadow-lg">
-                  <button
-                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 1) - 1)}
-                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-white text-sm font-black min-w-[20px] text-center">
-                    {cartItem?.quantity}
-                  </span>
-                  <button
-                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 0) + 1)}
-                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
+              <a
+                href={buildRedirectUrl({
+                  productId: bestStorePrice.id || listing.id,
+                  storeSlug: storeSlug,
+                  searchQuery: searchQuery,
+                  position: rank ?? position,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl
+                  bg-masala-primary text-white text-xs font-black shadow-lg
+                  hover:bg-masala-secondary hover:shadow-masala-primary/10 hover:scale-[1.03] active:scale-95 transition-all duration-200"
+              >
+                <span>Buy Now</span>
+              </a>
             </div>
           </div>
         </div>
