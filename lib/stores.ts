@@ -53,7 +53,6 @@ export const ALL_STORES = [
   { id: 'swadesh',      label: 'Swadesh' },
   { id: 'nammamarkt',   label: 'Namma Markt' },
   { id: 'angaadi',      label: 'Angaadi' },
-  { id: 'littleindia',  label: 'Little India' },
   { id: 'spicevillage', label: 'Spice Village' },
   { id: 'grocera',      label: 'Grocera' },
 ];

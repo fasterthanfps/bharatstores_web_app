@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { X, SlidersHorizontal } from 'lucide-react';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
@@ -94,6 +94,30 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
             Clear all
           </button>
         )}
+      </div>
+
+      {/* Sort Section */}
+      <div className="pb-4 border-b border-masala-border space-y-2">
+        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Sort By</p>
+        <div className="grid grid-cols-3 gap-1">
+          {[
+            { id: 'best',       label: 'Best' },
+            { id: 'price',      label: 'Price ↑' },
+            { id: 'pricePerKg', label: '€/kg' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilters({ sort: tab.id as any })}
+              className={`px-1 py-1.5 rounded-lg text-[10px] font-black uppercase border transition-all duration-200 ${
+                filters.sort === tab.id
+                  ? 'bg-masala-primary text-white border-masala-primary shadow-sm'
+                  : 'bg-white text-masala-text-muted border-masala-border hover:bg-masala-muted/30'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="pb-4 border-b border-masala-border">

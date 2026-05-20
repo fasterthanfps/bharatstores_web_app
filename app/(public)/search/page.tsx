@@ -191,114 +191,126 @@ function SearchPageContent() {
 
       {/* ═══ LAYER 1: Insight bar — 28px ═══ */}
       {!loading && totalCount > 0 && (
-        <div>
-          <button
-            onClick={() => setInsightsOpen(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-1.5
-              bg-masala-primary/5 border-b border-masala-border/30 text-xs"
-          >
-            <span className="font-bold text-masala-primary flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-masala-primary animate-pulse flex-shrink-0" />
-              {totalCount} results
-              {insights?.bestPrice && ` · from €${insights.bestPrice.toFixed(2)}`}
-              {insights?.storeCount && ` · ${insights.storeCount} stores`}
-            </span>
-            <span className="text-masala-text-muted text-[10px] font-medium flex-shrink-0">
-              {insightsOpen ? '▲' : '▼ details'}
-            </span>
-          </button>
+        <div className="bg-masala-primary/5 border-b border-masala-border/30">
+          <div className="max-w-[1600px] mx-auto w-full">
+            <button
+              onClick={() => setInsightsOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-1.5 text-xs md:pointer-events-none md:cursor-default"
+            >
+              <span className="font-bold text-masala-primary flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-masala-primary animate-pulse flex-shrink-0" />
+                {totalCount} results
+                {insights?.bestPrice && ` · from €${insights.bestPrice.toFixed(2)}`}
+                {insights?.storeCount && ` · ${insights.storeCount} stores`}
+              </span>
+              <span className="text-masala-text-muted text-[10px] font-medium flex-shrink-0 md:hidden">
+                {insightsOpen ? '▲' : '▼ details'}
+              </span>
+            </button>
 
-          {/* Collapsible stats — CLOSED by default */}
-          {insightsOpen && insights && (
-            <div className="grid grid-cols-2 gap-2 p-3 bg-masala-muted/40 border-b border-masala-border/40">
-              {[
-                { label: 'Best Deal',    value: insights.bestDeal?.name,  sub: insights.bestDeal ? `€${insights.bestDeal.price?.toFixed(2)}` : null },
-                { label: 'Lowest €/kg', value: insights.lowestPerKg ? `€${insights.lowestPerKg.toFixed(2)}/kg` : null },
-                { label: 'In Stock',    value: `${insights.inStockCount} products` },
-                { label: 'Stores',      value: `${insights.storeCount} matched` },
-              ].filter(s => s.value).map(stat => (
-                <div key={stat.label} className="bg-white rounded-xl p-2.5 border border-masala-border/60 shadow-sm">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-masala-text-muted">{stat.label}</p>
-                  <p className="text-xs font-bold text-masala-text mt-0.5 line-clamp-1">{stat.value}</p>
-                  {stat.sub && <p className="text-[11px] font-black text-masala-primary">{stat.sub}</p>}
-                </div>
-              ))}
-            </div>
-          )}
+            {/* Stats grid: ALWAYS open on desktop (md:grid), collapsible on mobile */}
+            {insights && (
+              <div className={`${
+                insightsOpen ? 'grid' : 'hidden md:grid'
+              } grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-masala-muted/30 border-t border-masala-border/40 animate-insights-slide`}>
+                
+                {/* Card 1: Best Deal */}
+                {insights.bestDeal && (
+                  <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3.5 border border-masala-border/50 shadow-[0_2px_8px_rgba(139,32,32,0.03)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(139,32,32,0.06)] hover:border-masala-primary/30 transition-all duration-300 flex items-start gap-3 animate-card-stagger-1 col-span-2 sm:col-span-1">
+                    <div className="w-9 h-9 rounded-xl bg-masala-primary/5 flex items-center justify-center text-masala-primary flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">Best Deal</p>
+                      <p className="text-base font-black text-masala-primary mt-0.5">
+                        €{insights.bestDeal.price?.toFixed(2)}
+                      </p>
+                      <p className="text-[11px] font-bold text-masala-text truncate mt-0.5 leading-none" title={insights.bestDeal.name}>
+                        {insights.bestDeal.name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card 2: Lowest per unit / kg */}
+                {insights.lowestPerKg && (
+                  <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3.5 border border-masala-border/50 shadow-[0_2px_8px_rgba(139,32,32,0.03)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(139,32,32,0.06)] hover:border-masala-primary/30 transition-all duration-300 flex items-start gap-3 animate-card-stagger-2">
+                    <div className="w-9 h-9 rounded-xl bg-masala-accent/5 flex items-center justify-center text-masala-accent flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">Best Value</p>
+                      <p className="text-base font-black text-masala-text mt-0.5">
+                        €{insights.lowestPerKg.toFixed(2)}/kg
+                      </p>
+                      <p className="text-[11px] font-bold text-masala-text-light mt-0.5 leading-none truncate">
+                        Weight basis ratio
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card 3: In stock */}
+                {insights.inStockCount !== undefined && (
+                  <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3.5 border border-masala-border/50 shadow-[0_2px_8px_rgba(139,32,32,0.03)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(139,32,32,0.06)] hover:border-masala-primary/30 transition-all duration-300 flex items-start gap-3 animate-card-stagger-3">
+                    <div className="w-9 h-9 rounded-xl bg-masala-success/5 flex items-center justify-center text-masala-success flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">In Stock</p>
+                      <p className="text-base font-black text-masala-text mt-0.5">
+                        {insights.inStockCount} items
+                      </p>
+                      <p className="text-[11px] font-bold text-masala-success mt-0.5 leading-none truncate">
+                        Ready to ship
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card 4: Supermarkets compared */}
+                {insights.storeCount !== undefined && (
+                  <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3.5 border border-masala-border/50 shadow-[0_2px_8px_rgba(139,32,32,0.03)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(139,32,32,0.06)] hover:border-masala-primary/30 transition-all duration-300 flex items-start gap-3 animate-card-stagger-4">
+                    <div className="w-9 h-9 rounded-xl bg-masala-primary/5 flex items-center justify-center text-masala-primary flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-masala-text-muted">Supermarkets</p>
+                      <p className="text-base font-black text-masala-text mt-0.5">
+                        {insights.storeCount} compared
+                      </p>
+                      <p className="text-[11px] font-bold text-masala-text-light mt-0.5 leading-none truncate">
+                        Real-time scrapes
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {/* ═══ LAYER 2: Filter chips row — 36px ═══ */}
-      <div className="sticky top-11 z-30 bg-white border-b border-masala-border/40 shadow-sm">
-        <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none">
-
-          {/* Category pills */}
-          {CATEGORY_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFilters({ ...filters, category: tab.id } as any)}
-              className={`flex-shrink-0 px-3 py-1 rounded-full text-[12px] font-bold
-                transition-all whitespace-nowrap ${
-                activeCategory === tab.id
-                  ? 'bg-masala-primary text-white shadow-sm'
-                  : 'bg-masala-muted/80 text-masala-text-muted hover:bg-masala-muted'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {/* Visual separator */}
-          <div className="w-px h-4 bg-masala-border flex-shrink-0 mx-0.5" />
-
-          {/* Sort pills */}
-          {[
-            { id: 'best',       label: 'Best' },
-            { id: 'price',      label: 'Price ↑' },
-            { id: 'pricePerKg', label: '€/kg' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFilters({ sort: tab.id as any })}
-              className={`flex-shrink-0 px-3 py-1 rounded-full text-[12px] font-bold
-                transition-all whitespace-nowrap ${
-                filters.sort === tab.id
-                  ? 'bg-masala-primary text-white shadow-sm'
-                  : 'bg-masala-muted/80 text-masala-text-muted hover:bg-masala-muted'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {/* Separator */}
-          <div className="w-px h-4 bg-masala-border flex-shrink-0 mx-0.5" />
-
-          {/* Filters button */}
-          <button
-            onClick={() => setFilterOpen(true)}
-            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full
-              text-[12px] font-bold transition-all whitespace-nowrap ${
-              hasActiveFilters
-                ? 'bg-masala-primary text-white'
-                : 'bg-masala-muted/80 text-masala-text-muted'
-            }`}
-          >
-            ⚙️
-            {hasActiveFilters ? ` ${activeFilterCount}` : ' Filters'}
-          </button>
-        </div>
-      </div>
 
       {/* ═══ LAYER 3: Tiny result count — 20px ═══ */}
       {!loading && totalCount > 0 && (
-        <p className="text-[10px] text-masala-text-muted px-3 pt-2 pb-0 font-medium">
-          {totalCount} results for "{filters.q.trim()}"
-        </p>
+        <div className="max-w-[1600px] mx-auto w-full px-3">
+          <p className="text-[10px] text-masala-text-muted pt-2 pb-0 font-medium">
+            {totalCount} results for "{filters.q.trim()}"
+          </p>
+        </div>
       )}
 
       {/* ═══ LAYER 4: PRODUCT GRID — starts at ~128px from sticky header ═══ */}
-      <div className="px-3 pt-2 pb-6 flex gap-8">
+      <div className="px-3 pt-2 pb-6 flex gap-8 max-w-[1600px] mx-auto w-full">
         <FilterSidebar isMobileOpen={filterOpen} onMobileClose={() => setFilterOpen(false)} resultCount={inStockResults.length} />
         
         <div className="flex-1 min-w-0">
@@ -393,12 +405,26 @@ function SearchPageContent() {
           )}
         </div>
       </div>
-      
+
       <CompareTray
         items={compareItems}
         onRemove={id => setCompareItems(prev => prev.filter(i => i.id !== id))}
         onClear={() => setCompareItems([])}
       />
+
+      {/* Floating mobile filters button */}
+      <button
+        onClick={() => setFilterOpen(true)}
+        className="fixed bottom-6 right-6 z-40 lg:hidden shadow-[0_8px_30px_rgba(139,32,32,0.15)] bg-masala-primary hover:bg-masala-primary/95 text-white font-extrabold text-xs uppercase tracking-widest py-3.5 px-5 rounded-full flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200"
+      >
+        <SlidersHorizontal className="h-4 w-4 text-white" />
+        Filters
+        {hasActiveFilters && (
+          <span className="bg-white text-masala-primary w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black leading-none">
+            {activeFilterCount}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

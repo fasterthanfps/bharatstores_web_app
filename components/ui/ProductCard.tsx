@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useSmartCart } from '@/stores/useSmartCart';
 import { getStoreConfig } from '@/lib/stores';
 import { buildRedirectUrl } from '@/lib/utm';
-import { Heart, Plus, Minus, Star, ChevronRight } from 'lucide-react';
+import { Heart, Plus, Minus } from 'lucide-react';
 import ProductModal from './ProductModal';
 import type { GroupedListing } from '@/lib/search/engine';
 import { useRouter } from 'next/navigation';
@@ -44,10 +44,6 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
   const cartItem  = useMemo(() => items.find(i => i.productId === listing.id && i.storeSlug === storeSlug), [items, listing.id, storeSlug]);
   const inCart    = !!cartItem;
 
-  // Fake rating — replace with real listing.rating when available
-  const rating    = listing.rating ?? (3.5 + Math.random() * 1.5);
-  const ratingCount = listing.ratingCount ?? Math.floor(Math.random() * 5000 + 100);
-
   // Original vs current price for savings display
   const currentPrice  = listing.bestPrice;
   const originalPrice = listing.originalPrice ?? (currentPrice * 1.12); // fallback +12%
@@ -62,125 +58,117 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
 
   const inStockStores = useMemo(() => listing.allPrices?.filter(s => s.availability !== 'OUT_OF_STOCK') || [], [listing.allPrices]);
 
-  const handleSeeMore = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const categoryQuery = listing.product_category?.toLowerCase() ?? '';
-    router.push(`/search?q=${encodeURIComponent(categoryQuery)}`);
-  };
-
   return (
     <>
       <div
-        className="group relative bg-white rounded-[20px] overflow-hidden cursor-pointer
-          transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] product-card-hover"
-        style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+        className="group relative bg-white rounded-[24px] p-2 cursor-pointer border border-masala-border/40
+          transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_8px_24px_rgba(139,32,32,0.06)] hover:border-masala-primary/20 space-y-3"
+        style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}
         onClick={() => setModalOpen(true)}
       >
 
-        {/* ══ IMAGE ZONE — top 55% of card ══ */}
-        <div className="relative w-full" style={{ paddingBottom: '100%' }}>
-          <div className="absolute inset-0 bg-[#F6F1EA] overflow-hidden">
+        {/* ══ IMAGE ZONE ══ */}
+        <div className="relative w-full aspect-square bg-[#F6F1EA]/60 rounded-[18px] overflow-hidden">
 
-            {/* Product image — fills the zone */}
-            {!imgError && listing.image_url ? (
-              <img
-                src={listing.image_url}
-                alt={listing.product_name}
-                className="absolute inset-0 w-full h-full object-contain p-3
-                  group-hover:scale-105 transition-transform duration-300"
-                onError={() => setImgError(true)}
-                loading="lazy"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-5xl">🛒</div>
-            )}
+          {/* Product image — fills the zone */}
+          {!imgError && listing.image_url ? (
+            <img
+              src={listing.image_url}
+              alt={listing.product_name}
+              className="absolute inset-0 w-full h-full object-contain p-3
+                group-hover:scale-105 transition-transform duration-300"
+              onError={() => setImgError(true)}
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-5xl">🛒</div>
+          )}
 
-            {/* Wishlist heart — top right */}
-            <button
-              onClick={e => { e.stopPropagation(); setWishlisted(v => !v); }}
-              className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm
-                flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
-            >
-              <Heart className={`w-4 h-4 transition-colors ${wishlisted ? 'fill-masala-primary text-masala-primary' : 'text-masala-text-muted'}`} />
-            </button>
+          {/* Wishlist heart — top right */}
+          <button
+            onClick={e => { e.stopPropagation(); setWishlisted(v => !v); }}
+            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm
+              flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
+          >
+            <Heart className={`w-4 h-4 transition-colors ${wishlisted ? 'fill-masala-primary text-masala-primary' : 'text-masala-text-muted'}`} />
+          </button>
 
-            {/* Rank badge — top left (only for top 3) */}
-            {rank && rank <= 3 && (
-              <div className={`absolute top-2.5 left-2.5 w-7 h-7 rounded-full flex items-center
-                justify-center text-[11px] font-black text-white shadow-sm z-10 ${
-                rank === 1 ? 'bg-masala-primary' :
-                rank === 2 ? 'bg-masala-primary/80' :
-                'bg-masala-primary/60'
-              }`}>
-                {rank}
-              </div>
-            )}
+          {/* Rank badge — top left (only for top 3) */}
+          {rank && rank <= 3 && (
+            <div className={`absolute top-2.5 left-2.5 w-7 h-7 rounded-full flex items-center
+              justify-center text-[11px] font-black text-white shadow-sm z-10 ${
+              rank === 1 ? 'bg-masala-primary' :
+              rank === 2 ? 'bg-masala-primary/80' :
+              'bg-masala-primary/60'
+            }`}>
+              {rank}
+            </div>
+          )}
 
-            {/* BEST PRICE badge — shown if this is the best across stores */}
-            {inStockStores.length > 1 && isBestPrice && (
-              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-[#0C6E3D]
-                text-white text-[9px] font-black uppercase tracking-wide shadow-sm z-10">
-                Best Price
-              </div>
-            )}
+          {/* BEST PRICE badge — shown if this is the best across stores */}
+          {inStockStores.length > 1 && isBestPrice && (
+            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-[#0C6E3D]
+              text-white text-[9px] font-black uppercase tracking-wide shadow-sm z-10">
+              Best Price
+            </div>
+          )}
 
-            {/* ── OVERLAY ROW: Weight (left) + ADD button (right) ── */}
-            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-2 z-10">
+          {/* ── OVERLAY ROW: Weight (left) + ADD button (right) ── */}
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-2 z-10">
 
-              {/* Weight pill — dark, like Blinkit */}
-              <div className="px-2.5 py-1 rounded-lg bg-[#1C1410]/75 backdrop-blur-sm">
-                <p className="text-white text-[11px] font-black leading-none truncate max-w-[60px]">{bestStorePrice.weight_label || '1 pc'}</p>
-              </div>
+            {/* Weight pill — dark, like Blinkit */}
+            <div className="px-2.5 py-1 rounded-lg bg-[#1C1410]/75 backdrop-blur-sm">
+              <p className="text-white text-[11px] font-black leading-none truncate max-w-[60px]">{bestStorePrice.weight_label || '1 pc'}</p>
+            </div>
 
-              {/* ADD / quantity control */}
-              <div onClick={e => e.stopPropagation()}>
-                {!inCart ? (
+            {/* ADD / quantity control */}
+            <div onClick={e => e.stopPropagation()}>
+              {!inCart ? (
+                <button
+                  onClick={() => addItem({
+                    productId: listing.id,
+                    productName: listing.product_name,
+                    imageUrl: listing.image_url ?? '',
+                    storeSlug: storeSlug,
+                    storeName: storeConfig.label,
+                    price: currentPrice,
+                    weight: bestStorePrice.weight_label ?? '',
+                    url: bestStorePrice.product_url,
+                    storeHandle: bestStorePrice.store_handle,
+                    variantId: bestStorePrice.variant_id,
+                  })}
+                  className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl
+                    bg-masala-primary text-white text-xs font-black shadow-lg
+                    hover:bg-masala-secondary active:scale-95 transition-all add-btn-tap"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>ADD</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1 bg-masala-primary rounded-xl overflow-hidden shadow-lg">
                   <button
-                    onClick={() => addItem({
-                      productId: listing.id,
-                      productName: listing.product_name,
-                      imageUrl: listing.image_url ?? '',
-                      storeSlug: storeSlug,
-                      storeName: storeConfig.label,
-                      price: currentPrice,
-                      weight: bestStorePrice.weight_label ?? '',
-                      url: bestStorePrice.product_url,
-                      storeHandle: bestStorePrice.store_handle,
-                      variantId: bestStorePrice.variant_id,
-                    })}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl
-                      bg-masala-primary text-white text-xs font-black shadow-lg
-                      hover:bg-masala-secondary active:scale-95 transition-all add-btn-tap"
+                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 1) - 1)}
+                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-white text-sm font-black min-w-[20px] text-center">
+                    {cartItem?.quantity}
+                  </span>
+                  <button
+                    onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 0) + 1)}
+                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>ADD</span>
                   </button>
-                ) : (
-                  <div className="flex items-center gap-1 bg-masala-primary rounded-xl overflow-hidden shadow-lg">
-                    <button
-                      onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 1) - 1)}
-                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-white text-sm font-black min-w-[20px] text-center">
-                      {cartItem?.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(listing.id, storeSlug, (cartItem?.quantity ?? 0) + 1)}
-                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-masala-secondary transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* ══ CONTENT ZONE — bottom of card ══ */}
-        <div className="p-3 pt-2.5 space-y-1.5">
+        <div className="px-2 pt-1 pb-2 space-y-1.5">
 
           {/* Price row — MOST PROMINENT */}
           <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -235,34 +223,6 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
               </span>
             )}
           </div>
-
-          {/* Rating row */}
-          <div className="flex items-center gap-1">
-            <div className="flex items-center gap-0.5">
-              {[1,2,3,4,5].map(star => (
-                <Star
-                  key={star}
-                  className={`w-3 h-3 ${star <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-masala-border'}`}
-                />
-              ))}
-            </div>
-            <span className="text-[10px] text-masala-text-muted font-medium">
-              {rating.toFixed(1)}
-            </span>
-            <span className="text-[10px] text-masala-text-muted">
-              ({ratingCount > 999 ? `${(ratingCount/1000).toFixed(1)}k` : ratingCount})
-            </span>
-          </div>
-
-          {/* See more like this */}
-          <button
-            onClick={handleSeeMore}
-            className="flex items-center gap-1 text-[11px] font-bold text-masala-primary
-              hover:underline transition-colors mt-0.5 pt-1.5 border-t border-masala-border/50 w-full"
-          >
-            See more like this
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
         </div>
       </div>
 

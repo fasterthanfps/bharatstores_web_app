@@ -76,33 +76,90 @@ export default function Header() {
 
   return (
     <>
-      <header className={`sticky top-0 z-50 bg-white shadow-sm ${isSearch ? 'h-11' : ''}`}>
+      <header className={`sticky top-0 z-50 bg-white shadow-sm ${isSearch ? 'h-11 md:h-20' : ''}`}>
         {isSearch ? (
-          <div className="h-full px-3 flex items-center gap-2 max-w-[1600px] mx-auto w-full">
-            <Link href="/" className="flex-shrink-0 flex items-center gap-0.5">
-              <span className="text-masala-primary font-black text-lg" style={{ fontFamily: 'Fraunces, serif' }}>B</span>
-              <span className="text-masala-text-muted text-[10px] font-black" style={{ fontFamily: 'Fraunces, serif' }}>.eu</span>
-            </Link>
-            <div className="flex-1 relative flex items-center">
-              <form onSubmit={handleMobileSearch} className="w-full relative flex items-center">
-                <Search
-                  className="absolute left-3.5 text-masala-text-muted pointer-events-none"
-                  style={{ width: '15px', height: '15px' }}
-                />
-                <input
-                  ref={mobileInputRef}
-                  type="search"
-                  inputMode="search"
-                  enterKeyHint="search"
-                  value={mobileSearchQuery}
-                  onChange={e => setMobileSearchQuery(e.target.value)}
-                  placeholder="Search Indian groceries…"
-                  className="w-full h-8 pl-9 pr-3 rounded-xl bg-masala-muted/50 border border-masala-border text-[13px] font-medium text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
-                />
-              </form>
+          <>
+            {/* Mobile search header: visible below md */}
+            <div className="md:hidden h-full px-3 flex items-center gap-2 w-full">
+              <Link href="/" className="flex-shrink-0 flex items-center gap-0.5">
+                <span className="text-masala-primary font-black text-lg" style={{ fontFamily: 'Fraunces, serif' }}>B</span>
+                <span className="text-masala-text-muted text-[10px] font-black" style={{ fontFamily: 'Fraunces, serif' }}>.eu</span>
+              </Link>
+              <div className="flex-1 relative flex items-center">
+                <form onSubmit={handleMobileSearch} className="w-full relative flex items-center">
+                  <Search
+                    className="absolute left-3.5 text-masala-text-muted pointer-events-none"
+                    style={{ width: '15px', height: '15px' }}
+                  />
+                  <input
+                    ref={mobileInputRef}
+                    type="search"
+                    inputMode="search"
+                    enterKeyHint="search"
+                    value={mobileSearchQuery}
+                    onChange={e => setMobileSearchQuery(e.target.value)}
+                    placeholder="Search Indian groceries…"
+                    className="w-full h-8 pl-9 pr-3 rounded-xl bg-masala-muted/50 border border-masala-border text-[13px] font-medium text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:border-masala-primary focus:bg-white transition-all"
+                  />
+                </form>
+              </div>
+              <HamburgerMenu />
             </div>
-            <HamburgerMenu />
-          </div>
+
+            {/* Desktop search header (on search page): visible above md */}
+            <div className="hidden md:flex items-center justify-between px-4 md:px-8 h-20 border-b border-masala-border/60 max-w-[1600px] mx-auto w-full gap-4">
+              {/* Logo + Language Toggle */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <Logo />
+                <LanguageToggle size="compact" />
+              </div>
+
+              {/* Desktop search */}
+              <div className="flex-1 max-w-3xl mx-8 lg:mx-16">
+                <SearchBar size="header" initialQuery={currentQ} />
+              </div>
+
+              {/* Desktop nav */}
+              <nav className="flex items-center gap-2">
+                <Link href="/deals"
+                  className="relative flex items-center gap-1.5 text-sm font-bold text-masala-primary hover:text-masala-secondary transition-colors mr-2">
+                  🏷️ Deals
+                  <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                    NEW
+                  </span>
+                </Link>
+                {[
+                  { href: '/blog', label: t('nav.blog') },
+                  { href: '/alerts', label: t('nav.priceAlert') },
+                  { href: '/account', label: t('nav.account') },
+                ].map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                      pathname === link.href 
+                        ? 'bg-masala-primary text-white shadow-md shadow-masala-primary/20' 
+                        : 'text-masala-text hover:text-masala-primary hover:bg-masala-muted/30'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={() => setCartOpen(true)}
+                  className="relative ml-2 p-2.5 rounded-xl bg-masala-muted/40 text-masala-text hover:text-masala-primary hover:bg-masala-muted/60 transition-colors"
+                  aria-label="Open Smart Cart"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {mounted && totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-masala-primary text-white text-[10px] font-black flex items-center justify-center shadow-sm">
+                      {totalItems > 9 ? '9+' : totalItems}
+                    </span>
+                  )}
+                </button>
+              </nav>
+            </div>
+          </>
         ) : (
           <>
             {/* ── Top bar: Logo + Search + Cart ── */}

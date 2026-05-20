@@ -578,4 +578,33 @@ a, button {
 }
 .add-btn-tap:active { animation: add-bounce 150ms ease; }
 
+/* Premium Search Insights Entry Animation */
+@keyframes insightsSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-insights-slide {
+  animation: insightsSlideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
+/* Staggered card fade-in */
+@keyframes cardScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-card-stagger-1 { animation: cardScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+.animate-card-stagger-2 { animation: cardScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+.animate-card-stagger-3 { animation: cardScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both; }
+.animate-card-stagger-4 { animation: cardScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both; }

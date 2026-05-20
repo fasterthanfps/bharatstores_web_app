@@ -1,6 +1,6 @@
 import { JamoonaScraper } from './stores/jamoona';
 import { GroceraScraper } from './stores/grocera';
-import { LittleIndiaScraper } from './stores/littleindia';
+// import { LittleIndiaScraper } from './stores/littleindia';
 import { NammamarktScraper } from './stores/nammamarkt';
 import { DookanScraper } from './stores/dookan';
 import { SwadeshScraper } from './stores/swadesh';
@@ -16,7 +16,7 @@ export class ScraperOrchestrator {
         new NammamarktScraper(),   // Shopify
         new AngaadiScraper(),      // WooCommerce
         new SwadeshScraper(),      // WooCommerce
-        new LittleIndiaScraper(),  // WooCommerce
+        // new LittleIndiaScraper(),  // WooCommerce - Skipped due to Cloudflare WAF block
         new GroceraScraper(),      // Custom/Next.js — slowest, last
     ];
 
