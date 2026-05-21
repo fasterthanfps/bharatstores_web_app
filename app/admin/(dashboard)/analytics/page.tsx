@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from '@/lib/stores';
-import { TrendingUp, MousePointerClick, Zap, Smartphone } from 'lucide-react';
+import { TrendingUp, MousePointerClick, Zap, Smartphone, SearchX } from 'lucide-react';
 
 type Range = '1d' | '7d' | '30d';
 
@@ -67,12 +67,13 @@ function StoreBarChart({ data }: { data: { storeSlug: string; count: number }[] 
 
 // ── Analytics Page ─────────────────────────────────────────────────────────────
 export default function AnalyticsDashboard() {
-  const [range, setRange]         = useState<Range>('7d');
-  const [summary, setSummary]     = useState<any>(null);
-  const [storeData, setStoreData] = useState<any[]>([]);
-  const [queryData, setQueryData] = useState<any[]>([]);
+  const [range, setRange]           = useState<Range>('7d');
+  const [summary, setSummary]       = useState<any>(null);
+  const [storeData, setStoreData]   = useState<any[]>([]);
+  const [queryData, setQueryData]   = useState<any[]>([]);
   const [deviceData, setDeviceData] = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [zeroResults, setZeroResults] = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -81,11 +82,14 @@ export default function AnalyticsDashboard() {
       fetchAnalytics('store', range),
       fetchAnalytics('query', range),
       fetchAnalytics('device', range),
-    ]).then(([s, st, q, d]) => {
+      // Zero-results is range-independent (always last 30d)
+      fetch('/api/admin/zero-results').then(r => r.json()).then(j => j.data ?? []).catch(() => []),
+    ]).then(([s, st, q, d, zr]) => {
       setSummary(s);
       setStoreData(st ?? []);
       setQueryData(q ?? []);
       setDeviceData(d ?? []);
+      setZeroResults(zr ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [range]);
@@ -199,7 +203,63 @@ export default function AnalyticsDashboard() {
               )}
             </div>
 
-            {/* ── 4. DEVICE BREAKDOWN ── */}
+            {/* ── 4. ZERO RESULTS (Catalog Intelligence) ── */}
+            <div className="rounded-2xl border overflow-hidden" style={{ background: '#1C1A17', borderColor: '#2C2820' }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: '#2C2820' }}>
+                <SearchX className="h-4 w-4" style={{ color: '#8B2020' }} />
+                <h2 className="text-sm font-black uppercase tracking-widest" style={{ color: '#9C8E84' }}>
+                  Zero-Result Queries
+                </h2>
+                <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#2C2820', color: '#6B5E52' }}>
+                  Last 30d
+                </span>
+              </div>
+              {zeroResults.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: '#2C2820' }}>
+                      {['#', 'Search Query', 'Times Searched', 'Last Seen'].map(h => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B5E52' }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {zeroResults.map((row: any, i: number) => (
+                      <tr key={row.normalized_query ?? i} className="border-b hover:bg-white/5 transition-colors" style={{ borderColor: '#2C2820' }}>
+                        <td className="px-5 py-3 text-xs tabular-nums" style={{ color: '#6B5E52' }}>{i + 1}</td>
+                        <td className="px-5 py-3">
+                          <span className="text-sm font-semibold" style={{ color: '#E8E0D4' }}>{row.query}</span>
+                          {row.normalized_query && row.normalized_query !== row.query && (
+                            <span className="ml-2 text-xs" style={{ color: '#6B5E52' }}>→ {row.normalized_query}</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 rounded-full" style={{
+                              background: '#8B2020',
+                              width: `${Math.round((row.count / zeroResults[0].count) * 80)}px`,
+                              minWidth: '4px',
+                            }} />
+                            <span className="text-sm font-black tabular-nums" style={{ color: '#8B2020' }}>{row.count}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-xs" style={{ color: '#6B5E52' }}>
+                          {new Date(row.last_seen).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-sm py-8 text-center" style={{ color: '#6B5E52' }}>
+                  🎉 No zero-result queries yet — or none in the last 30 days.
+                </p>
+              )}
+            </div>
+
+            {/* ── 5. DEVICE BREAKDOWN ── */}
             <div className="rounded-2xl border p-6" style={{ background: '#1C1A17', borderColor: '#2C2820' }}>
               <h2 className="text-sm font-black uppercase tracking-widest mb-5" style={{ color: '#9C8E84' }}>
                 Device Breakdown

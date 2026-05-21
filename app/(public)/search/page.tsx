@@ -47,6 +47,27 @@ function SearchPageContent() {
   const [backgroundPollCount, setBackgroundPollCount] = useState(0);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [insights, setInsights] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [timeLabel, setTimeLabel] = useState<string>('');
+
+  useEffect(() => {
+    if (!lastUpdated) {
+      setTimeLabel('');
+      return;
+    }
+    const updateLabel = () => {
+      const diffMs = Date.now() - lastUpdated.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) {
+        setTimeLabel('Just updated');
+      } else {
+        setTimeLabel(`${diffMins}m ago`);
+      }
+    };
+    updateLabel();
+    const interval = setInterval(updateLabel, 30000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const refreshingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,6 +109,7 @@ function SearchPageContent() {
       setResults(listings);
       setInsights(apiInsights);
       setLoading(false);
+      setLastUpdated(new Date());
       if (listings.length > 0 && !isRefreshing) stopTimer();
 
       if (isRefreshing && !refreshingRef.current) { 
@@ -148,7 +170,11 @@ function SearchPageContent() {
     try {
       const res = await fetch(`/api/search/refresh?q=${encodeURIComponent(filters.q)}&sort=${filters.sort}`, { method: 'POST' });
       const data = await res.json();
-      if (data.success) { setResults(data.data?.listings || []); setLoading(false); }
+      if (data.success) { 
+        setResults(data.data?.listings || []); 
+        setLoading(false); 
+        setLastUpdated(new Date());
+      }
       else await fetchResults();
     } catch { await fetchResults(); }
     finally { stopTimer(); setRefreshing(false); refreshingRef.current = false; }
@@ -195,24 +221,39 @@ function SearchPageContent() {
           <div className="max-w-[1600px] mx-auto w-full">
             <button
               onClick={() => setInsightsOpen(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-1.5 text-xs md:pointer-events-none md:cursor-default"
+              className="w-full flex items-center justify-between px-4 py-2.5 text-xs transition-colors duration-200 hover:bg-masala-primary/5 cursor-pointer"
             >
-              <span className="font-bold text-masala-primary flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-masala-primary animate-pulse flex-shrink-0" />
-                {totalCount} results
-                {insights?.bestPrice && ` · from €${insights.bestPrice.toFixed(2)}`}
-                {insights?.storeCount && ` · ${insights.storeCount} stores`}
+              <span className="font-bold text-masala-primary flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-masala-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-masala-primary"></span>
+                </span>
+                <span className="uppercase tracking-wider text-[10px] font-black">Live Insights</span>
+                <span className="text-masala-text-muted font-normal">|</span>
+                <span>{totalCount} results</span>
+                {insights?.bestPrice && (
+                  <>
+                    <span className="text-masala-text-muted font-normal">·</span>
+                    <span>from €{insights.bestPrice.toFixed(2)}</span>
+                  </>
+                )}
+                {insights?.storeCount && (
+                  <>
+                    <span className="text-masala-text-muted font-normal">·</span>
+                    <span>{insights.storeCount} stores</span>
+                  </>
+                )}
               </span>
-              <span className="text-masala-text-muted text-[10px] font-medium flex-shrink-0 md:hidden">
-                {insightsOpen ? '▲' : '▼ details'}
+              <span className="text-masala-primary text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                {insightsOpen ? 'Hide Details ▲' : 'View Insights ▼'}
               </span>
             </button>
 
-            {/* Stats grid: ALWAYS open on desktop (md:grid), collapsible on mobile */}
+            {/* Collapsible Stats grid */}
             {insights && (
               <div className={`${
-                insightsOpen ? 'grid' : 'hidden md:grid'
-              } grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-masala-muted/30 border-t border-masala-border/40 animate-insights-slide`}>
+                insightsOpen ? 'grid animate-insights-slide' : 'hidden'
+              } grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-masala-muted/30 border-t border-masala-border/40`}>
                 
                 {/* Card 1: Best Deal */}
                 {insights.bestDeal && (
@@ -300,12 +341,33 @@ function SearchPageContent() {
         </div>
       )}
 
-      {/* ═══ LAYER 3: Tiny result count — 20px ═══ */}
+      {/* ═══ LAYER 3: Result count & Refresh ═══ */}
       {!loading && totalCount > 0 && (
-        <div className="max-w-[1600px] mx-auto w-full px-3">
-          <p className="text-[10px] text-masala-text-muted pt-2 pb-0 font-medium">
-            {totalCount} results for "{filters.q.trim()}"
+        <div className="max-w-[1600px] mx-auto w-full px-3 flex items-center justify-between pt-2 pb-1">
+          <p className="text-[10px] text-masala-text-muted font-bold">
+            {totalCount} {t('search.resultsFor')} &ldquo;{filters.q.trim()}&rdquo;
           </p>
+          <div className="flex items-center gap-2">
+            {timeLabel && (
+              <span className="text-[9px] font-bold text-masala-primary bg-masala-primary/5 border border-masala-primary/10 px-2 py-0.5 rounded-md animate-fade-in flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-masala-primary animate-pulse"></span>
+                {timeLabel}
+              </span>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              id="search-refresh-prices-btn"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm border border-masala-border/40 cursor-pointer ${
+                refreshing 
+                  ? 'bg-masala-primary/10 text-masala-primary animate-pulse cursor-not-allowed'
+                  : 'bg-white hover:bg-masala-pill text-masala-text hover:text-masala-primary hover:shadow active:scale-95'
+              }`}
+            >
+              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? t('search.loading') : t('search.refreshPrices')}
+            </button>
+          </div>
         </div>
       )}
 

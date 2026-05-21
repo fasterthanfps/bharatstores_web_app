@@ -1,0 +1,52 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import Header from '@/components/layout/Header';
+import Link from 'next/link';
+import { BarChart3, Settings, GitMerge, BookOpen } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+const NAV_LINKS = [
+    { href: '/admin',          label: 'Analytics',     icon: BarChart3 },
+    { href: '/admin/scrapers', label: 'Scrapers',      icon: Settings  },
+    { href: '/admin/catalog',  label: 'Catalog',       icon: GitMerge  },
+    { href: '/admin/rules',    label: 'Intent Rules',  icon: BookOpen  },
+];
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Must be authenticated
+    if (!user) redirect('/admin/login');
+
+    // 2. Must be in admin_users table (role-based access control)
+    const { data: isAdmin } = await supabase.rpc('is_admin', { uid: user.id });
+    if (!isAdmin) redirect('/'); // silent redirect — don't reveal the panel exists
+
+    return (
+        <>
+            <Header />
+            <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-12">
+                <div className="mx-auto max-w-6xl">
+                    <nav className="mb-8 flex items-center gap-1 border-b border-white/8 pb-6">
+                        <span className="mr-3 text-sm font-semibold text-orange-400 uppercase tracking-wider">
+                            Admin
+                        </span>
+                        {NAV_LINKS.map(({ href, label, icon: Icon }) => (
+                            <Link
+                                key={href}
+                                href={href}
+                                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                            >
+                                <Icon className="h-3.5 w-3.5" />
+                                {label}
+                            </Link>
+                        ))}
+                    </nav>
+                    {children}
+                </div>
+            </main>
+        </>
+    );
+}

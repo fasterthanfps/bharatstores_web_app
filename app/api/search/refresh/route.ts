@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
             });
 
             // Group listings by product
-            const liveGrouped = groupListingsByProduct(uniqueListings, queryLower, synonyms, sortCol);
+            const liveGrouped = groupListingsByProduct(uniqueListings, queryLower, synonyms, sortCol)
+                .filter((p: any) => (p._score ?? 0) > 0);
             const { exact, related } = splitExactVsRelated(liveGrouped);
 
             console.log(`[Cache Refresh] Fresh scrape saved ${uniqueListings.length} listings for "${query}"`);

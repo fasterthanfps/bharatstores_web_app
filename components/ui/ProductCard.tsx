@@ -46,9 +46,21 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
 
   // Original vs current price for savings display
   const currentPrice  = listing.bestPrice;
-  const originalPrice = listing.originalPrice ?? (currentPrice * 1.12); // fallback +12%
-  const hasSavings    = originalPrice > currentPrice * 1.01;
-  const savingsPct    = hasSavings ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
+  const originalPrice = listing.originalPrice ?? null;
+
+  // Show badge ONLY when:
+  // 1. originalPrice exists in DB (scraped from compare_at_price)
+  // 2. originalPrice is genuinely > currentPrice by at least 2%
+  // 3. Discount is under 80% (sanity guard against bad scraper data)
+  const discount = originalPrice != null && originalPrice > 0
+    ? (originalPrice - currentPrice) / originalPrice
+    : null;
+
+  const savingsPct = (
+    discount !== null &&
+    discount >= 0.02 &&
+    discount < 0.80
+  ) ? Math.round(discount * 100) : null;
 
   // Freshness
   const minutesAgo = (bestStorePrice as any).last_updated
@@ -112,10 +124,10 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
               </div>
             )}
 
-            {/* Price savings badge (e.g. 11% OFF) — bottom left overlay */}
-            {savingsPct > 0 && (
-              <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-full bg-[#0C6E3D]
-                text-white text-[8px] font-black uppercase tracking-wide shadow-sm z-10 leading-none">
+            {/* Price savings badge (e.g. 11% OFF) — top left overlay */}
+            {savingsPct !== null && (
+              <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full
+                bg-[#0C6E3D] text-white text-[10px] font-black shadow-sm leading-tight">
                 {savingsPct}% OFF
               </div>
             )}
@@ -149,8 +161,8 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
               >
                 €{currentPrice.toFixed(2)}
               </span>
-              {hasSavings && (
-                <span className="text-[11px] sm:text-[12px] text-masala-text-muted line-through leading-none">
+              {savingsPct !== null && originalPrice !== null && (
+                <span className="text-[12px] text-masala-text-muted line-through">
                   €{originalPrice.toFixed(2)}
                 </span>
               )}

@@ -49,21 +49,21 @@ export async function GET(req: NextRequest) {
 
     const { data: historyData, error: historyError } = await supabase
       .from('price_history')
-      .select('listing_id, price')
+      .select('product_id, price')
       .gte('recorded_at', sevenDaysAgo.toISOString());
 
     if (historyError) {
       console.warn(`[Cron] Warning fetching price history: ${historyError.message}`);
     }
 
-    // Group history prices by listing_id
+    // Group history prices by product_id
     const historyMap = new Map<string, number[]>();
     if (historyData) {
       for (const row of historyData) {
-        if (!row.listing_id) continue;
-        const prices = historyMap.get(row.listing_id) || [];
+        if (!row.product_id) continue;
+        const prices = historyMap.get(row.product_id) || [];
         prices.push(Number(row.price));
-        historyMap.set(row.listing_id, prices);
+        historyMap.set(row.product_id, prices);
       }
     }
 
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
       // Determine 7-day average
       let avgPrice7d = 0;
-      const historyPrices = historyMap.get(listing.id);
+      const historyPrices = historyMap.get(listing.product_id ?? '');
 
       if (historyPrices && historyPrices.length > 0) {
         const sum = historyPrices.reduce((a, b) => a + b, 0);

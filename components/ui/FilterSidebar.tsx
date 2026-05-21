@@ -80,7 +80,7 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
   };
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-masala-primary" />
@@ -89,7 +89,7 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-xs text-masala-primary font-bold hover:underline transition-colors"
+            className="text-xs text-masala-primary font-bold hover:underline transition-colors cursor-pointer"
           >
             Clear all
           </button>
@@ -97,160 +97,243 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
       </div>
 
       {/* Sort Section */}
-      <div className="pb-4 border-b border-masala-border space-y-2">
+      <div className="pb-5 border-b border-masala-border space-y-3">
         <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Sort By</p>
-        <div className="grid grid-cols-3 gap-1">
+        <div className="space-y-2">
           {[
-            { id: 'best',       label: 'Best' },
-            { id: 'price',      label: 'Price ↑' },
-            { id: 'pricePerKg', label: '€/kg' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilters({ sort: tab.id as any })}
-              className={`px-1 py-1.5 rounded-lg text-[10px] font-black uppercase border transition-all duration-200 ${
-                filters.sort === tab.id
-                  ? 'bg-masala-primary text-white border-masala-primary shadow-sm'
-                  : 'bg-white text-masala-text-muted border-masala-border hover:bg-masala-muted/30'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { id: 'best',       label: 'Best Match' },
+            { id: 'price',      label: 'Price: Low to High' },
+            { id: 'pricePerKg', label: 'Price per Unit/Kg' },
+          ].map((tab) => {
+            const isSelected = filters.sort === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilters({ sort: tab.id as any })}
+                className="w-full flex items-center justify-between text-left p-2.5 rounded-xl border transition-all duration-200 cursor-pointer"
+                style={{
+                  borderColor: isSelected ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                  backgroundColor: isSelected ? 'rgba(139, 32, 32, 0.03)' : '#FFFFFF'
+                }}
+              >
+                <span className={`text-[11px] font-bold ${isSelected ? 'text-masala-primary' : 'text-masala-text'}`}>
+                  {tab.label}
+                </span>
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
+                  isSelected ? 'border-masala-primary bg-masala-primary' : 'border-masala-border bg-white'
+                }`}>
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="pb-4 border-b border-masala-border">
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-sm font-semibold text-masala-text">In Stock Only</span>
-          <input
-            type="checkbox"
-            checked={filters.inStockOnly}
-            onChange={e => setFilters({ inStockOnly: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="relative w-10 h-5 rounded-full bg-masala-border peer-checked:bg-masala-primary transition-colors duration-200">
-            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${filters.inStockOnly ? 'translate-x-5' : ''}`} />
+      {/* In Stock Toggle */}
+      <div className="pb-5 border-b border-masala-border">
+        <button
+          onClick={() => setFilters({ inStockOnly: !filters.inStockOnly })}
+          className="w-full flex items-center justify-between cursor-pointer text-left focus:outline-none"
+        >
+          <span className="text-xs font-black uppercase tracking-widest text-masala-text-muted">In Stock Only</span>
+          <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center p-0.5 ${
+            filters.inStockOnly ? 'bg-masala-primary' : 'bg-masala-border'
+          }`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+              filters.inStockOnly ? 'translate-x-5' : 'translate-x-0'
+            }`} />
           </div>
-        </label>
+        </button>
       </div>
 
-      <div className="pb-4 border-b border-masala-border space-y-2">
-        <div className="grid grid-cols-3 gap-1">
-          {(['range', 'below', 'above'] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setFilters({ priceMode: mode })}
-              className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase border ${filters.priceMode === mode ? 'bg-masala-primary text-white border-masala-primary' : 'bg-white text-masala-text-muted border-masala-border'}`}
-            >
-              {mode}
-            </button>
-          ))}
+      {/* Price Presets & Slider */}
+      <div className="pb-5 border-b border-masala-border space-y-3">
+        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Price Range</p>
+        
+        {/* Preset Chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: 'Under €5', max: 5 },
+            { label: 'Under €10', max: 10 },
+            { label: 'Under €25', max: 25 },
+            { label: 'Under €50', max: 50 },
+          ].map((preset) => {
+            const isSelected = filters.maxPrice === preset.max;
+            return (
+              <button
+                key={preset.max}
+                onClick={() => setFilters({ maxPrice: preset.max, priceMode: 'range' })}
+                className="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-200 cursor-pointer"
+                style={{
+                  borderColor: isSelected ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                  backgroundColor: isSelected ? 'var(--color-masala-primary)' : '#FFFFFF',
+                  color: isSelected ? '#FFFFFF' : 'var(--color-masala-text-muted)'
+                }}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
 
-        <p className="text-sm font-semibold text-masala-text">
-          Price: €{filters.minPrice} - €{filters.maxPrice === 100 ? '100+' : filters.maxPrice}
-        </p>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={filters.maxPrice}
-          onChange={e => setFilters({ maxPrice: Number(e.target.value) })}
-          className="w-full accent-masala-primary"
-        />
-        <div className="flex justify-between text-[10px] text-masala-text-light">
-          <span>€0</span>
-          <span>€100+</span>
+        {/* Custom Price Slider */}
+        <div className="space-y-2 pt-1">
+          <div className="flex justify-between items-center text-xs font-bold text-masala-text">
+            <span>€0</span>
+            <span className="text-masala-primary bg-masala-primary/5 px-2 py-0.5 rounded-md border border-masala-primary/10">
+              max €{filters.maxPrice > 50 ? '50+' : filters.maxPrice}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={50}
+            step={1}
+            value={Math.min(filters.maxPrice, 50)}
+            onChange={e => setFilters({ maxPrice: Number(e.target.value) })}
+            className="w-full accent-masala-primary cursor-pointer"
+          />
+          <div className="flex justify-between text-[10px] text-masala-text-light font-medium">
+            <span>€0</span>
+            <span>€50+</span>
+          </div>
         </div>
       </div>
 
       {opts.showQuantity && (
-      <div className="pb-4 border-b border-masala-border space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Quantity</p>
-        <select
-          value={filters.quantity}
-          onChange={(e) => setFilters({ quantity: e.target.value })}
-          className="w-full h-10 rounded-xl border border-masala-border px-3 text-sm bg-white"
-        >
-          <option value="">All quantities</option>
-          {(opts.quantities ?? []).map((q) => <option key={q} value={q}>{q}</option>)}
-        </select>
-      </div>
+        <div className="pb-5 border-b border-masala-border space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Quantity</p>
+          <select
+            value={filters.quantity}
+            onChange={(e) => setFilters({ quantity: e.target.value })}
+            className="w-full h-10 rounded-xl border border-masala-border px-3 text-xs bg-white font-bold text-masala-text focus:outline-none focus:border-masala-primary transition-all duration-200 cursor-pointer"
+          >
+            <option value="">All quantities</option>
+            {(opts.quantities ?? []).map((q) => <option key={q} value={q}>{q}</option>)}
+          </select>
+        </div>
       )}
 
       {opts.showBrand && (
-      <div className="pb-4 border-b border-masala-border space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Brand</p>
-        <div className="flex flex-wrap gap-1.5">
-          {(opts.brands ?? []).map((b) => (
-            <button
-              key={b}
-              onClick={() => toggleArrayFilter('brands', b)}
-              className={`px-2 py-1 rounded-full text-[11px] border ${filters.brands.includes(b) ? 'bg-masala-primary text-white border-masala-primary' : 'bg-white text-masala-text border-masala-border'}`}
-            >
-              {b}
-            </button>
-          ))}
+        <div className="pb-5 border-b border-masala-border space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Brand</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(opts.brands ?? []).map((b) => {
+              const isSelected = filters.brands.includes(b);
+              return (
+                <button
+                  key={b}
+                  onClick={() => toggleArrayFilter('brands', b)}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-200 capitalize cursor-pointer"
+                  style={{
+                    borderColor: isSelected ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                    backgroundColor: isSelected ? 'var(--color-masala-primary)' : '#FFFFFF',
+                    color: isSelected ? '#FFFFFF' : 'var(--color-masala-text-muted)'
+                  }}
+                >
+                  {b}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
       )}
 
       {opts.showType && (
-      <div className="pb-4 border-b border-masala-border space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Type</p>
-        <div className="flex flex-wrap gap-1.5">
-          {(opts.types ?? []).map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleArrayFilter('types', t)}
-              className={`px-2 py-1 rounded-full text-[11px] border ${filters.types.includes(t) ? 'bg-masala-primary text-white border-masala-primary' : 'bg-white text-masala-text border-masala-border'}`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="pb-5 border-b border-masala-border space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Type</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(opts.types ?? []).map((t) => {
+              const isSelected = filters.types.includes(t);
+              return (
+                <button
+                  key={t}
+                  onClick={() => toggleArrayFilter('types', t)}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-200 capitalize cursor-pointer"
+                  style={{
+                    borderColor: isSelected ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                    backgroundColor: isSelected ? 'var(--color-masala-primary)' : '#FFFFFF',
+                    color: isSelected ? '#FFFFFF' : 'var(--color-masala-text-muted)'
+                  }}
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
       )}
 
       {opts.showSugar && (
-      <div className="pb-4 border-b border-masala-border space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Sugar Profile</p>
-        <div className="space-y-2">
-          {(opts.sugarOptions?.length ? opts.sugarOptions : FALLBACK_SUGAR_OPTIONS).map((s) => (
-            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.sugar.includes(s.id)}
-                onChange={() => toggleArrayFilter('sugar', s.id)}
-                className="w-4 h-4 rounded border-masala-border accent-masala-primary"
-              />
-              <span className="text-sm text-masala-text">{s.label}</span>
-            </label>
-          ))}
+        <div className="pb-5 border-b border-masala-border space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted">Sugar Profile</p>
+          <div className="space-y-2">
+            {(opts.sugarOptions?.length ? opts.sugarOptions : FALLBACK_SUGAR_OPTIONS).map((s) => {
+              const checked = filters.sugar.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => toggleArrayFilter('sugar', s.id)}
+                  className="w-full flex items-center justify-between text-left p-2.5 rounded-xl border transition-all duration-200 hover:border-masala-primary/30 cursor-pointer"
+                  style={{
+                    borderColor: checked ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                    backgroundColor: checked ? 'rgba(139, 32, 32, 0.03)' : '#FFFFFF'
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                      checked ? 'border-masala-primary bg-masala-primary text-white' : 'border-masala-border bg-white'
+                    }`}>
+                      {checked && (
+                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-[11px] font-bold ${checked ? 'text-masala-primary' : 'text-masala-text'}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {checked && <span className="w-1.5 h-1.5 rounded-full bg-masala-primary" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
       )}
 
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-masala-text-muted mb-3">Stores</p>
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {ALL_STORES.map(store => {
             const checked = filters.stores.includes(store.id);
             return (
-              <label key={store.id} className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleStore(store.id)}
-                  className="w-4 h-4 rounded border-masala-border accent-masala-primary cursor-pointer flex-shrink-0"
-                />
-                <span className={`text-sm transition-colors ${checked ? 'text-masala-primary font-semibold' : 'text-masala-text group-hover:text-masala-primary'}`}>
-                  {store.label}
-                </span>
-                {checked && <span className="ml-auto w-2 h-2 rounded-full bg-masala-primary flex-shrink-0" />}
-              </label>
+              <button
+                key={store.id}
+                onClick={() => toggleStore(store.id)}
+                className="w-full flex items-center justify-between text-left p-2.5 rounded-xl border transition-all duration-200 hover:border-masala-primary/30 cursor-pointer"
+                style={{
+                  borderColor: checked ? 'var(--color-masala-primary)' : 'var(--color-masala-border)',
+                  backgroundColor: checked ? 'rgba(139, 32, 32, 0.03)' : '#FFFFFF'
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                    checked ? 'border-masala-primary bg-masala-primary text-white' : 'border-masala-border bg-white'
+                  }`}>
+                    {checked && (
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className={`text-[11px] font-bold ${checked ? 'text-masala-primary font-bold' : 'text-masala-text'}`}>
+                    {store.label}
+                  </span>
+                </div>
+                {checked && <span className="w-1.5 h-1.5 rounded-full bg-masala-primary" />}
+              </button>
             );
           })}
         </div>

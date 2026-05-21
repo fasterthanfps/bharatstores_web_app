@@ -90,15 +90,24 @@ export default function ProductModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Prevent scroll when modal is open
+  // Prevent body scroll AND header interaction while modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+    
+    // Find header and lower its z-index temporarily
+    const header = document.querySelector('header');
+    if (header) {
+      header.dataset.prevZ = header.style.zIndex;
+      header.style.zIndex = '90'; // below modal z-[100]
     }
+
     return () => {
       document.body.style.overflow = '';
+      const header = document.querySelector('header');
+      if (header) {
+        header.style.zIndex = header.dataset.prevZ ?? '';
+      }
     };
   }, [isOpen]);
 
@@ -179,16 +188,42 @@ export default function ProductModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto flex items-start sm:items-center justify-center p-4 sm:p-6 md:p-10">
+    <div
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
       {/* Backdrop */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-fade-in"
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
         style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl bg-gradient-to-b from-[#FAF9F6] to-[#F5ECE0] rounded-[2.5rem] border border-white/80 shadow-[0_32px_80px_-20px_rgba(28,20,16,0.35),_inset_0_1px_1px_rgba(255,255,255,0.7)] flex flex-col z-10 animate-scale-in duration-300 my-auto overflow-hidden">
+      <div
+        className={`
+          relative bg-gradient-to-b from-[#FAF9F6] to-[#F5ECE0] border border-[#E8E0D4] shadow-2xl
+          flex flex-col z-[101]
+          w-full
+          
+          /* Mobile: bottom sheet */
+          rounded-t-3xl max-h-[92vh]
+          
+          /* Desktop: centered dialog */
+          sm:rounded-3xl sm:max-w-4xl sm:max-h-[88vh]
+          
+          overflow-hidden
+          modal-mobile-sheet
+        `}
+        style={{ height: 'min(92vh, 720px)' }}
+      >
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full bg-masala-border" />
+        </div>
         
         {/* Header Section */}
         <div className="p-6 pb-4 border-b border-[#EAE3D8] flex items-start justify-between bg-white/40 backdrop-blur-md sticky top-0 rounded-t-[2.5rem] z-20">
@@ -246,7 +281,7 @@ export default function ProductModal({
         </div>
 
         {/* Content Section */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-12 h-12 rounded-full border-4 border-masala-primary border-t-transparent animate-spin" />

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { smartTruncateQuery } from '@/lib/search/normalize';
 import {
     FRESH_TTL_MS,
     SYNONYM_MAP,
+    WORD_SYNONYMS,
     groupListingsByProduct,
     splitExactVsRelated,
     shapeListings,
     saveAndReturnListings,
     getCategoryFromQuery
 } from '@/lib/search/engine';
-import { smartTruncateQuery } from '@/lib/search/normalize';
 
 function parseWeightGrams(weightLabel?: string | null): number | null {
     if (!weightLabel) return null;
@@ -125,7 +126,24 @@ export async function GET(req: NextRequest) {
     const freshCutoff = new Date(Date.now() - FRESH_TTL_MS).toISOString();
     const synonyms = SYNONYM_MAP[queryLower] ?? [];
     const coreQuery = smartTruncateQuery(queryLower);
-    const allTerms = Array.from(new Set([queryLower, coreQuery, ...synonyms])).filter(t => t.length >= 2);
+    
+    // Token-level synonym & typo query expansion for highly robust matches
+    const tokens = coreQuery.split(/\s+/).filter(t => t.length >= 3);
+    const expandedTokens: string[] = [];
+    for (const t of tokens) {
+        expandedTokens.push(t);
+        const wordSyns = WORD_SYNONYMS[t] ?? [];
+        expandedTokens.push(...wordSyns);
+    }
+
+    const allTerms = Array.from(
+        new Set([
+            queryLower,
+            coreQuery,
+            ...synonyms,
+            ...expandedTokens
+        ])
+    ).filter(t => t.length >= 2);
 
     const matchedCategory = getCategoryFromQuery(queryLower);
     const orClauses = [
@@ -155,7 +173,7 @@ export async function GET(req: NextRequest) {
     const hasFresh = freshResults.length > 0;
     const filteredFresh = applyGroupedFilters(freshResults, { stores, minPrice, maxPrice, inStockOnly, priceMode, quantity, brands, types, sugar });
     const filteredAll = applyGroupedFilters(currentGrouped, { stores, minPrice, maxPrice, inStockOnly, priceMode, quantity, brands, types, sugar });
-    const finalResults = hasFresh ? filteredFresh : filteredAll;
+    const finalResults = (hasFresh ? filteredFresh : filteredAll).filter((p: any) => (p._score ?? 0) > 0);
 
     const { exact, related } = splitExactVsRelated(finalResults);
 
@@ -208,7 +226,8 @@ export async function GET(req: NextRequest) {
             const liveListings = await saveAndReturnListings(scraperResults, query, serviceClient, sortCol);
             
             const liveGrouped = groupListingsByProduct(liveListings, queryLower, synonyms, sortCol);
-            const filteredLive = applyGroupedFilters(liveGrouped, { stores, minPrice, maxPrice, inStockOnly, priceMode, quantity, brands, types, sugar });
+            const filteredLive = applyGroupedFilters(liveGrouped, { stores, minPrice, maxPrice, inStockOnly, priceMode, quantity, brands, types, sugar })
+                .filter((p: any) => (p._score ?? 0) > 0);
             const { exact: e, related: r } = splitExactVsRelated(filteredLive);
 
             const liveInStockProducts = filteredLive.filter((p: any) => p.allPrices?.some((price: any) => price.availability !== 'OUT_OF_STOCK'));
@@ -239,6 +258,19 @@ export async function GET(req: NextRequest) {
     } catch (e: any) {
         console.error('[Search API] Live scrape failed:', e.message);
     }
+
+    // ── Log zero-result query to search_events (fire-and-forget) ─────────────
+    void (async () => {
+        try {
+            const serviceClient = createServiceClient();
+            await serviceClient.from('search_events').insert({
+                query,
+                normalized_query: smartTruncateQuery(query.toLowerCase()),
+                results_count: 0,
+                session_id: undefined,
+            });
+        } catch { /* non-critical — never block the response */ }
+    })();
 
     return NextResponse.json({ success: true, data: { listings: [], total: 0, fresh: false } });
 }

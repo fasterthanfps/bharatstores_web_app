@@ -4,6 +4,7 @@ import { BarChart3, ShoppingBag, MousePointer, Store, TrendingUp } from 'lucide-
 import { formatEUR } from '@/lib/utils/currency';
 
 export const metadata: Metadata = { title: 'Admin – Analytics' };
+export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
     const supabase = await createClient();

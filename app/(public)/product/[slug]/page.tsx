@@ -62,15 +62,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
         } as ListingWithStore;
     });
 
-    // Fetch price history for the first listing (cheapest)
-    const cheapestListingId = listings[0]?.id;
-    let priceHistory: Array<{ recorded_at: string; price: number; availability: string }> = [];
+    // Fetch price history for this product (cheapest store by slug)
+    let priceHistory: Array<{ recorded_at: string; price: number; in_stock: boolean }> = [];
 
-    if (cheapestListingId) {
+    if (product) {
         const { data: history } = await supabase
             .from('price_history')
-            .select('recorded_at, price, availability')
-            .eq('listing_id', cheapestListingId)
+            .select('recorded_at, price, in_stock')
+            .eq('product_id', product.id)
             .order('recorded_at', { ascending: true })
             .limit(60);
         priceHistory = (history ?? [])
@@ -78,7 +77,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             .map((h) => ({
                 recorded_at: h.recorded_at as string,
                 price: h.price,
-                availability: h.availability,
+                in_stock: h.in_stock,
             }));
     }
 

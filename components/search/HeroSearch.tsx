@@ -9,7 +9,7 @@ export default function HeroSearch() {
         rounded-[3rem] blur-2xl opacity-0 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-300" />
       
       <div className="relative w-full">
-        <SearchBar size="hero" autoFocus />
+        <SearchBar size="hero" />
       </div>
       
     </div>

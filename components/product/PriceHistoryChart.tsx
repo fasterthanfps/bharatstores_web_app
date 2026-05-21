@@ -14,7 +14,8 @@ import {
 interface PricePoint {
     recorded_at: string;
     price: number;
-    availability: string;
+    in_stock?: boolean;
+    availability?: string; // legacy compat
 }
 
 interface PriceHistoryChartProps {
