@@ -123,11 +123,12 @@ export default function Home() {
 
           {/* Headline */}
           <h1
-            className="text-5xl sm:text-6xl md:text-[4.5rem] font-black text-masala-text mb-4 tracking-tight leading-[1.0] animate-slide-up"
+            className="text-5xl sm:text-6xl md:text-[4.5rem] font-black text-masala-text mb-4 tracking-tight leading-[1.05] animate-slide-up"
             style={{ fontFamily: 'Fraunces, serif' }}
           >
-            Find the Best{' '}
-            <span className="text-masala-primary italic underline decoration-masala-primary/20 underline-offset-4">
+            Find the Best
+            <br />
+            <span className="text-masala-primary italic">
               Prices in Europe.
             </span>
           </h1>
