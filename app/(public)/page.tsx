@@ -92,7 +92,7 @@ export default function Home() {
         ))}
 
         {/* ── Main content ── */}
-        <div className="relative z-10 w-full max-w-[600px] mx-auto px-6 text-center py-8">
+        <div className="relative z-10 w-full max-w-[800px] mx-auto px-6 text-center py-8">
           {/* Two badge pills */}
           <div className="flex items-center justify-center gap-2 mb-6 animate-fade-in">
             {/* Live indicator */}
@@ -128,18 +128,18 @@ export default function Home() {
           >
             Find the Best
             <br />
-            <span className="text-masala-primary italic">
+            <span className="text-masala-primary italic sm:whitespace-nowrap">
               Prices in Europe.
             </span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-[17px] sm:text-[19px] text-masala-text-muted leading-relaxed max-w-[500px] mx-auto text-center mt-3 animate-slide-up animation-delay-200">
+          <p className="text-[17px] sm:text-[19px] text-masala-text-muted leading-relaxed max-w-[600px] mx-auto text-center mt-3 animate-slide-up animation-delay-200">
             Compare prices across 8 Indian stores in Germany. Smart, fast, and 100% free.
           </p>
 
           {/* Search bar directly in the middle! */}
-          <div className="relative z-50 mt-8 animate-slide-up animation-delay-300">
+          <div className="relative z-50 mt-8 max-w-[620px] mx-auto animate-slide-up animation-delay-300">
             <HeroSearch />
           </div>
 
