@@ -66,7 +66,7 @@ const LOCAL_STORAGE_STATE_KEY = 'bs-kanban-v1';
 const LOCAL_STORAGE_AUTH_KEY = 'bs-kanban-auth-v1';
 
 export default function DedicatedKanbanPage() {
-    const supabase = createClient();
+    const supabase = createClient() as any;
     const [columns, setColumns] = useState<Column[]>([]);
     const [cards, setCards] = useState<Card[]>([]);
     const [currentUser, setCurrentUser] = useState<string>('Team Member');
@@ -177,7 +177,7 @@ export default function DedicatedKanbanPage() {
                     loadStateFromLocalStorage();
                     setHasCloudSync(false);
                 } else {
-                    let activeCols: Column[] = colsData.map(c => ({
+                    let activeCols: Column[] = colsData.map((c: any) => ({
                         id: c.id,
                         title: c.title,
                         color: c.color,
@@ -209,7 +209,7 @@ export default function DedicatedKanbanPage() {
                     setColumns(activeCols.length > 0 ? activeCols : DEFAULT_COLUMNS);
 
                     // Set cards with properly formatted JSON data
-                    const formattedCards: Card[] = (cardsData || []).map(c => ({
+                    const formattedCards: Card[] = (cardsData || []).map((c: any) => ({
                         id: c.id,
                         colId: c.col_id,
                         type: c.type as Card['type'],
