@@ -11,7 +11,6 @@ const MOST_SEARCHED = ['Basmati Rice', 'Amul Ghee', 'MDH Masala', 'Toor Dal', 'A
 
 const STATS = [
   { value: '5,000+', label: 'Products' },
-  { value: '8',      label: 'Stores' },
   { value: '40%',    label: 'Avg savings' },
 ];
 
@@ -93,7 +92,7 @@ export default function Home() {
 
         {/* ── Main content ── */}
         <div className="relative z-10 w-full max-w-[800px] mx-auto px-6 text-center py-8">
-          {/* Two badge pills */}
+          {/* Badge pill */}
           <div className="flex items-center justify-center gap-2 mb-6 animate-fade-in">
             {/* Live indicator */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-masala-border shadow-sm">
@@ -103,20 +102,6 @@ export default function Home() {
               </span>
               <span className="text-[11px] font-black text-masala-text uppercase tracking-widest">
                 Live prices
-              </span>
-            </div>
-
-            {/* Region pill */}
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
-              style={{
-                background: 'rgba(139,32,32,0.08)',
-                borderColor: 'rgba(139,32,32,0.20)',
-              }}
-            >
-              <span className="text-sm">🇩🇪</span>
-              <span className="text-[11px] font-bold text-masala-primary">
-                8 stores in Germany
               </span>
             </div>
           </div>
@@ -135,7 +120,7 @@ export default function Home() {
 
           {/* Subtitle */}
           <p className="text-[17px] sm:text-[19px] text-masala-text-muted leading-relaxed max-w-[600px] mx-auto text-center mt-3 animate-slide-up animation-delay-200">
-            Compare prices across 8 Indian stores in Germany. Smart, fast, and 100% free.
+            Compare prices across Indian stores in Germany. Smart, fast, and 100% free.
           </p>
 
           {/* Search bar directly in the middle! */}

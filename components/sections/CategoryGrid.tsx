@@ -6,6 +6,8 @@ const CATEGORIES = [
   { emoji: '🌾', key: 'category.flour', query: 'wheat flour' },
   { emoji: '🍚', key: 'category.basmati', query: 'basmati rice' },
   { emoji: '🍛', key: 'category.southrice', query: 'ponni rice' },
+  { emoji: '🫘', key: 'category.dal', query: 'dal' },
+  { emoji: '🥛', key: 'category.dairy', query: 'dairy' },
   { emoji: '🥣', key: 'category.grains', query: 'flour mixes' },
   { emoji: '🌶️', key: 'category.spices', query: 'spices masala' },
   { emoji: '🍜', key: 'category.instant', query: 'ready to eat' },

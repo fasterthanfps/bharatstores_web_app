@@ -172,3 +172,38 @@ model SearchIntentRule {
   @@index([isActive, priority(sort: Desc)])
   @@map("search_intent_rules")
 }
+
+model KanbanColumn {
+  id        String   @id
+  title     String
+  color     String
+  wipLimit  Int      @default(0) @map("wip_limit")
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cards     KanbanCard[]
+
+  @@map("kanban_columns")
+}
+
+model KanbanCard {
+  id          String   @id
+  colId       String   @map("col_id")
+  type        String
+  priority    String
+  title       String
+  description String?
+  dueDate     String?  @map("due_date")
+  tags        String[]
+  assignees   String[]
+  comments    Json     @default("[]")
+  checklist   Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  column      KanbanColumn @relation(fields: [colId], references: [id], onDelete: Cascade)
+
+  @@map("kanban_cards")
+}
+

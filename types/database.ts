@@ -519,6 +519,92 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_columns: {
+        Row: {
+          id: string
+          title: string
+          color: string
+          wip_limit: number
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          title: string
+          color: string
+          wip_limit?: number
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          color?: string
+          wip_limit?: number
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kanban_cards: {
+        Row: {
+          id: string
+          col_id: string
+          type: string
+          priority: string
+          title: string
+          description: string | null
+          due_date: string | null
+          tags: string[]
+          assignees: string[]
+          comments: Json
+          checklist: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          col_id: string
+          type: string
+          priority: string
+          title: string
+          description?: string | null
+          due_date?: string | null
+          tags?: string[]
+          assignees?: string[]
+          comments?: Json
+          checklist?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          col_id?: string
+          type?: string
+          priority?: string
+          title?: string
+          description?: string | null
+          due_date?: string | null
+          tags?: string[]
+          assignees?: string[]
+          comments?: Json
+          checklist?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_cards_col_id_fkey"
+            columns: ["col_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -39,7 +39,7 @@ const en: Record<string, string> = {
   'category.beverages': 'Beverages',
   'category.care': 'Personal & Home Care',
   'category.pooja': 'Pooja Items',
-  'category.dal': 'Pulses / Dal',
+  'category.dal': 'Lentils / Dal',
   'category.dairy': 'Dairy',
   'category.tea': 'Tea / Coffee',
   'category.frozen': 'Frozen Food',

@@ -90,12 +90,15 @@ const INTENT_PROFILES: IntentProfile[] = [
     {
         keys: ['rice', 'basmati', 'chawal'],
         include: ['rice', 'basmati', 'sona', 'chawal'],
-        exclude: ['noodle', 'flakes', 'pasta']
+        exclude: ['noodle', 'flakes', 'pasta', 'masala']
     },
     {
-        keys: ['dal', 'daal', 'lentil', 'pulses', 'toor', 'moong', 'masoor', 'chana', 'rajma'],
-        include: ['dal', 'lentil', 'toor', 'moong', 'masoor', 'chana', 'rajma'],
-        exclude: ['snack', 'mixture', 'chips']
+        keys: ['dal', 'daal', 'lentil', 'lentils', 'pulses', 'toor', 'moong', 'masoor', 'chana', 'rajma', 'urad', 'urid'],
+        include: ['dal', 'daal', 'lentil', 'lentils', 'toor', 'moong', 'masoor', 'chana', 'rajma', 'urad', 'urid'],
+        exclude: [
+            'snack', 'snacks', 'namkeen', 'mixture', 'chips', 'masala', 'fried', 'spiced', 'roasted', 'salted', 'crunchy', 'crispy',
+            'haldiram', 'haldirams', 'haldiram\'s', 'balaji', 'bikano', 'cofresh', 'lehar', 'gopal'
+        ]
     },
     {
         keys: ['ghee', 'clarified butter'],
@@ -106,6 +109,17 @@ const INTENT_PROFILES: IntentProfile[] = [
         keys: ['biscuit', 'cookie'],
         include: ['biscuit', 'cookie', 'digestive', 'cream biscuit'],
         exclude: ['flour', 'atta', 'dal', 'rice']
+    },
+    {
+        keys: ['paneer', 'cottage cheese'],
+        include: ['paneer', 'cottage cheese'],
+        exclude: [
+            'masala', 'mix', 'tikka', 'makhani', 'butter masala', 'gravy', 'sauce',
+            'paste', 'powder', 'recipe', 'seasoning', 'ready to eat', 'instant',
+            'paratha', 'samosa', 'biryani', 'curry', 'kofta', 'bhurji', 'dish',
+            'ready-to-eat', 'meal', 'entree', 'gravy mix',
+            'palak', 'mutter', 'matar', 'shahi', 'kadai', 'karahi', 'butter', 'chilli', 'chili'
+        ]
     }
 ];
 
@@ -162,6 +176,68 @@ function levenshteinDistance(a: string, b: string): number {
  * Returns a score 0-120 (higher = more relevant).
  */
 export function scoreRelevance(listing: any, queryLower: string, synonyms: string[]): number {
+    const rawScore = calculateBaseRelevance(listing, queryLower, synonyms);
+    if (rawScore <= 2) return rawScore;
+
+    // Apply smart product analysis adjustments based on the subcategory matches
+    const name = (listing.product_name ?? listing.name ?? '').toLowerCase();
+    const category = (listing.product_category ?? '').toLowerCase();
+    const imageUrl = listing.image_url ?? listing.imageUrl ?? null;
+    
+    const analysis = analyzeProductImageAndName(name, imageUrl, category);
+    
+    // Check query intent (including synonyms)
+    const allQueryTerms = [queryLower, ...synonyms].map(s => s.toLowerCase());
+    const isNamkeenQuery = allQueryTerms.some(term => 
+        term.includes('namkeen') || term.includes('sev') || term.includes('bhujia') || 
+        term.includes('mixture') || term.includes('farsan') || term.includes('chivda') || 
+        term.includes('gathia') || term.includes('gathiya') || term.includes('mathri')
+    );
+    const isBiscuitQuery = allQueryTerms.some(term => 
+        term.includes('biscuit') || term.includes('cookie') || term.includes('rusk') || 
+        term.includes('toast')
+    );
+    const isChipsQuery = allQueryTerms.some(term => 
+        term.includes('chips') || term.includes('chip') || term.includes('crisps') || 
+        term.includes('lays') || term.includes('kurkure')
+    );
+
+    let score = rawScore;
+
+    if (isNamkeenQuery) {
+        if (analysis.isNamkeen) {
+            // Authentic namkeen gets a very strong boost to surface above all else
+            score += 35;
+        } else if (analysis.isBiscuit) {
+            // Biscuits are sweet and should be demoted heavily in namkeen searches
+            score -= 60;
+        } else if (analysis.isChips) {
+            // Potato chips are savory but not authentic namkeen, demote them moderately
+            score -= 30;
+        }
+    } else if (isBiscuitQuery) {
+        if (analysis.isBiscuit) {
+            score += 25;
+        } else if (analysis.isNamkeen) {
+            score -= 40;
+        } else if (analysis.isChips) {
+            score -= 30;
+        }
+    } else if (isChipsQuery) {
+        if (analysis.isChips) {
+            score += 25;
+        } else if (analysis.isNamkeen) {
+            score -= 40;
+        } else if (analysis.isBiscuit) {
+            score -= 40;
+        }
+    }
+
+    // Clamp score to ensure it stays in the valid range of 3 to 120 (unless original rawScore was above 120)
+    return Math.max(3, Math.min(Math.max(120, rawScore), score));
+}
+
+export function calculateBaseRelevance(listing: any, queryLower: string, synonyms: string[]): number {
     const name = (listing.product_name ?? listing.name ?? '').toLowerCase();
     const category = (listing.product_category ?? '').toLowerCase();
     const searchTerms = (listing.search_terms ?? []) as string[];
@@ -173,10 +249,57 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         for (const profile of activeIntentProfiles) {
             // Intent should be driven by product name first, category second.
             if (profile.include.some((t) => hasTerm(name, t)) || profile.include.some((t) => hasTerm(category, t))) includeHit++;
-            if (profile.exclude.some((t) => hasTerm(name, t))) excludeHit++;
+            if (profile.exclude.some((t) => (hasTerm(name, t) || hasTerm(category, t)) && !hasTerm(queryLower, t))) excludeHit++;
         }
         if (excludeHit > 0) return 2; // Immediately penalize if there's any exclude hit!
-        if (includeHit > 0) return 100 + Math.min(includeHit, 2);
+        if (includeHit > 0) {
+            // Calculate how many of the query's core tokens match this product name
+            const coreQuery = smartTruncateQuery(queryLower);
+            const coreTokens = coreQuery.split(/\s+/).filter(t => t.length >= 2);
+            const nameTokens = name.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 2);
+
+            let queryTokenMatches = 0;
+            if (coreTokens.length > 0) {
+                for (const qt of coreTokens) {
+                    const qtSyns = WORD_SYNONYMS[qt] ?? [];
+                    const isMatch = nameTokens.includes(qt) || qtSyns.some(syn => nameTokens.includes(syn));
+                    if (isMatch) queryTokenMatches++;
+                }
+            }
+
+            // Base intent score
+            let baseScore = 100 + Math.min(includeHit, 2);
+
+            // If the query has multiple tokens, we must prioritize products that match MORE of the query tokens.
+            // For example, if searching "Amul Ghee", a product matching both "Amul" and "Ghee" should score significantly
+            // higher than a product matching only "Ghee".
+            if (coreTokens.length > 1) {
+                const matchRatio = queryTokenMatches / coreTokens.length;
+                baseScore += Math.floor(matchRatio * 20);
+            } else if (coreTokens.length === 1) {
+                if (queryTokenMatches > 0) {
+                    baseScore += 5;
+                }
+            }
+
+            // Brand match boost: if the query contains a specific brand, and this product matches that brand, boost it!
+            const popularBrands = [
+                'kissan', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali',
+                'aashirvaad', 'ashirvaad', 'heera', 'amul', 'everest', 'catch', 'kohinoor', 'maggi',
+                'grb', 'ayurveda', 'khanum', 'anila', 'pillsbury', 'fortune', 'tilda', 'daawat', 'swad'
+            ];
+            const queryBrands = coreTokens.filter(t => popularBrands.includes(t));
+            if (queryBrands.length > 0) {
+                const matchesBrand = queryBrands.some(qb => nameTokens.includes(qb));
+                if (matchesBrand) {
+                    baseScore += 15;
+                } else {
+                    baseScore -= 15; // Penalize if query specified a brand but this product is a different brand
+                }
+            }
+
+            return baseScore;
+        }
     }
 
     // Use a cleaned "core" query for smarter token matching
@@ -239,10 +362,17 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
     if (nameMatchesAnyQueryToken || nameTokens.some((t: string) => t === queryLower)) {
         const popularBrands = [
             'kissan', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali',
-            'aashirvaad', 'heera', 'amul', 'everest', 'catch', 'kohinoor', 'maggi'
+            'aashirvaad', 'ashirvaad', 'heera', 'amul', 'everest', 'catch', 'kohinoor', 'maggi',
+            'grb', 'ayurveda', 'khanum', 'anila', 'pillsbury', 'fortune', 'tilda', 'daawat', 'swad'
         ];
-        for (const brand of popularBrands) {
-            if (nameTokens.includes(brand)) return 110;
+        const queryBrands = coreTokens.filter(t => popularBrands.includes(t));
+        if (queryBrands.length > 0) {
+            const matchesQueryBrand = queryBrands.some(qb => nameTokens.includes(qb));
+            if (matchesQueryBrand) return 110;
+        } else {
+            for (const brand of popularBrands) {
+                if (nameTokens.includes(brand)) return 110;
+            }
         }
     }
 
@@ -447,7 +577,7 @@ export function shapeListings(listings: any[]) {
         const product = l.products as any;
         const store = l.stores as any;
         const name = product?.name ?? l.product_name ?? '';
-        const rawCategory = product?.category ?? l.product_category ?? '';
+        const rawCategory = inferCategory(name);
         const img = l.image_url ?? null;
         
         // Run visual-textual mismatch analyzer on-the-fly for immediate correction on cached data
@@ -613,10 +743,19 @@ export function inferCategory(name: string): string {
     const hasWord = (regex: RegExp) => regex.test(combined);
     if (hasWord(/\b(rusk|rusks|toastea|toast|drycake)\b/)) return 'snacks';
     if (hasWord(/\b(sweet|mithai|halwa|ladoo|barfi|pedha|rasgulla|gulab\s+jamun|kheer|dessert)\b/)) return 'sweets';
-    if (hasWord(/\b(paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi|cheese)\b/)) return 'dairy';
+    if (hasWord(/\b(paneer|yogurt|yoghurt|curd|dahi|milk|cream|butter|dairy|lassi|cheese)\b/)) {
+        if (hasWord(/\b(masala|mix|powder|spices|spice|recipe|sauce|paste|gravy)\b/)) return 'spices';
+        return 'dairy';
+    }
     if (hasWord(/\b(rice|chawal|basmati|sona|sonamasoori|poha)\b/)) return 'rice';
     if (hasWord(/\b(atta|aata|flour|besan|maida|sooji|suji|rava|semolina)\b/)) return 'flour';
-    if (hasWord(/\b(dal|lentil|bean|beans|chana|toor|moong|masoor|rajma|lobia|urad|kabuli)\b/)) return 'lentils';
+    if (hasWord(/\b(dal|lentil|bean|beans|chana|toor|moong|masoor|rajma|lobia|urad|kabuli)\b/)) {
+        if (hasWord(/\b(snack|snacks|namkeen|mixture|fried|spiced|roasted|salted|crunchy|crispy)\b/) ||
+            hasWord(/\b(haldiram|haldirams|balaji|bikano|cofresh|lehar|gopal)\b/)) {
+            return 'snacks';
+        }
+        return 'lentils';
+    }
     if (hasWord(/\b(soap|shampoo|conditioner|toothpaste|toothbrush|hand\s*wash|face\s*wash|body\s*wash|dish\s*wash|cleaner|detergent|scrub|lotion|moisturizer|cream|gel|hair\s*oil|hair\s*cream|hair\s*dye|hair\s*colour|henna|mehendi|talc|talcum|baby\s*powder|face\s*powder|sanitizer|disinfectant|harpic|colgate|pepsodent|sensodyne|pears|dettol|lifebuoy|dove|lux|fiama|cinthol|hamam|mysore\s*sandal|medimix|santoor|margo|himalaya|neem\s*soap|shikakai|reetha|ayur)\b/)) return 'care';
     if (hasWord(/\b(agarbatti|incense|dhoop|pooja|puja|diya|camphor|kapoor|cotton\s+wicks|matchbox)\b/)) return 'pooja';
     if (hasWord(/\b(ghee|butter\s+ghee)\b/)) return 'oil-ghee';

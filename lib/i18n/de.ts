@@ -39,7 +39,7 @@ const de: Record<string, string> = {
   'category.beverages': 'Getränke',
   'category.care': 'Körper- & Haushaltspflege',
   'category.pooja': 'Pooja-Artikel',
-  'category.dal': 'Hülsenfrüchte / Dal',
+  'category.dal': 'Linsen / Dal',
   'category.dairy': 'Milchprodukte',
   'category.tea': 'Tee / Kaffee',
   'category.frozen': 'Tiefkühlkost',

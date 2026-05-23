@@ -9,6 +9,9 @@ export interface AnalysisResult {
     detectedCategory: string | null;
     confidence: 'high' | 'medium' | 'low';
     reason: string | null;
+    isNamkeen?: boolean;
+    isBiscuit?: boolean;
+    isChips?: boolean;
 }
 
 /**
@@ -51,13 +54,21 @@ export function analyzeProductImageAndName(
     }
     
     // 2. Snacks detection
-    const snacksKeywords = /\b(rusk|rusks|toast|drycake|snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one|puri|crackers|mathri|mathis|mathi|mathia|khakhra|gathiya|pakoda|pakora|chivda|farsan)\b/;
+    const snacksKeywords = /\b(rusk|rusks|toast|drycake|snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one|puri|crackers|mathri|mathis|mathi|mathia|khakhra|gathiya|pakoda|pakora|chivda|farsan|boondi|bikaneri|ratlami|bhakarwadi|bakharwadi|chana\s+chor|moong\s+dal\s+snack|salted\s+peanuts|moong\s+dal\s+salted|sing\s+bhujia|karasev)\b/;
     if (snacksKeywords.test(combinedText)) {
+        const isBiscuit = /\b(rusk|rusks|toast|drycake|biscuit|cookie|biscuits|cookies|bourbon|marie|good\s+day|hide\s+seek|oreo|monaco|krackjack|parle-g|digestive|milkbikis|unibic|crackers)\b/.test(combinedText);
+        const isChips = /\b(chips|chip|crisps|crisp|lays|lay's|kurkure|pringles|doritos|potato\s+chips)\b/.test(combinedText);
+        const isNamkeen = /\b(namkeen|mixture|sev|bhujia|murukku|gathia|gathiya|ghatiya|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one|mathri|mathis|mathi|mathia|khakhra|chivda|farsan|boondi|bikaneri|ratlami|bhakarwadi|bakharwadi|chana\s+chor|karasev|pakoda|pakora)\b/.test(combinedText) || 
+            (!isBiscuit && !isChips && /\b(haldiram|bikano|balaji|gopal|bikaji|cofresh)\b/.test(combinedText) && /\b(snack|snacks|dal|peanuts|grams)\b/.test(combinedText));
+
         return {
             isMismatch: currentCategory !== 'snacks',
             detectedCategory: 'snacks',
             confidence: 'high',
-            reason: `Found snack keyword in name or image: "${nameLower}" / "${imageFilename}"`
+            reason: `Found snack keyword in name or image: "${nameLower}" / "${imageFilename}"`,
+            isNamkeen,
+            isBiscuit,
+            isChips
         };
     }
 

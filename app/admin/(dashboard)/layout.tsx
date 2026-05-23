@@ -13,6 +13,7 @@ const NAV_LINKS = [
     { href: '/admin/rules',    label: 'Intent Rules',  icon: BookOpen  },
 ];
 
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -29,15 +30,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Header />
             <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mx-auto max-w-6xl">
-                    <nav className="mb-8 flex items-center gap-1 border-b border-white/8 pb-6">
-                        <span className="mr-3 text-sm font-semibold text-orange-400 uppercase tracking-wider">
+                    <nav className="mb-8 flex items-center gap-1 border-b border-masala-border pb-6">
+                        <span className="mr-3 text-sm font-extrabold text-masala-accent uppercase tracking-wider">
                             Admin
                         </span>
                         {NAV_LINKS.map(({ href, label, icon: Icon }) => (
                             <Link
                                 key={href}
                                 href={href}
-                                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-masala-text-muted hover:bg-masala-muted hover:text-masala-text transition-all font-semibold"
                             >
                                 <Icon className="h-3.5 w-3.5" />
                                 {label}
