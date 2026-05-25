@@ -53,6 +53,17 @@ export function analyzeProductImageAndName(
         };
     }
     
+    // 1.5. Sweets / Mithai / Dessert detection
+    const sweetsKeywords = /\b(sweet|sweets|mithai|halwa|ladoo|laddu|barfi|pedha|peda|rasgulla|gulab\s+jamun|kheer|dessert|soan\s+papdi|rasmalai|jalebi|cham\s+cham|sandesh)\b/;
+    if (sweetsKeywords.test(combinedText)) {
+        return {
+            isMismatch: currentCategory !== 'sweets',
+            detectedCategory: 'sweets',
+            confidence: 'high',
+            reason: `Found sweet/mithai keyword in name or image: "${nameLower}" / "${imageFilename}"`
+        };
+    }
+    
     // 2. Snacks detection
     const snacksKeywords = /\b(rusk|rusks|toast|drycake|snack|namkeen|chips|biscuit|cookie|biscuits|cookies|mixture|sev|bhujia|papads|papad|murukku|gathia|khatta\s+meetha|navrattan|panchrattan|dalmoth|chanachur|all\s+in\s+one|puri|crackers|mathri|mathis|mathi|mathia|khakhra|gathiya|pakoda|pakora|chivda|farsan|boondi|bikaneri|ratlami|bhakarwadi|bakharwadi|chana\s+chor|moong\s+dal\s+snack|salted\s+peanuts|moong\s+dal\s+salted|sing\s+bhujia|karasev)\b/;
     if (snacksKeywords.test(combinedText)) {

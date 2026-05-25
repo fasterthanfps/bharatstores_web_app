@@ -201,9 +201,31 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         term.includes('chips') || term.includes('chip') || term.includes('crisps') || 
         term.includes('lays') || term.includes('kurkure')
     );
+    const isSweetsQuery = allQueryTerms.some(term =>
+        term.includes('sweet') || term.includes('sweets') || term.includes('mithai') ||
+        term.includes('ladoo') || term.includes('laddu') || term.includes('dessert') ||
+        term.includes('halwa') || term.includes('barfi') || term.includes('gulab jamun') ||
+        term.includes('soan papdi') || term.includes('kheer')
+    );
 
     let score = rawScore;
 
+    // 1. Subtle popular brand boost (+5) when brand was not searched but matched generic keywords
+    const popularBrands = [
+        'kissan', 'mdh', 'trs', 'haldiram', 'ashoka', 'patanjali',
+        'aashirvaad', 'ashirvaad', 'heera', 'amul', 'everest', 'catch', 'kohinoor', 'maggi',
+        'grb', 'ayurveda', 'khanum', 'anila', 'pillsbury', 'fortune', 'tilda', 'daawat', 'swad'
+    ];
+    const nameTokens = name.split(/[^a-z0-9]+/).filter((t: string) => t.length >= 2);
+    const hasPopularBrand = popularBrands.some(brand => nameTokens.includes(brand));
+    const coreQuery = smartTruncateQuery(queryLower);
+    const coreTokens = coreQuery.split(/\s+/).filter(t => t.length >= 2);
+    const queryBrands = coreTokens.filter(t => popularBrands.includes(t));
+    if (hasPopularBrand && queryBrands.length === 0) {
+        score += 5;
+    }
+
+    // 2. Query intent subcategory adjustments
     if (isNamkeenQuery) {
         if (analysis.isNamkeen) {
             // Authentic namkeen gets a very strong boost to surface above all else
@@ -230,6 +252,23 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
             score -= 40;
         } else if (analysis.isBiscuit) {
             score -= 40;
+        }
+    } else if (isSweetsQuery) {
+        const isSweetProduct = category === 'sweets' || analysis.detectedCategory === 'sweets' ||
+            /\b(sweet|sweets|mithai|halwa|ladoo|laddu|barfi|pedha|peda|rasgulla|gulab\s+jamun|kheer|dessert|soan\s+papdi|rasmalai|jalebi|cham\s+cham|sandesh)\b/.test(name);
+        
+        if (isSweetProduct) {
+            score += 35;
+        } else {
+            // Demote highly irrelevant foods like raw dairy (paneer/cheese), pickles/chutney, and savory spices
+            const isIrrelevantForSweets = /\b(paneer|curd|dahi|cheese|yogurt|yoghurt|pickle|achaar|spices|spice|masala|soup|sauce|chutney)\b/.test(name) ||
+                category === 'dairy' || category === 'condiments' || category === 'spices';
+            
+            if (isIrrelevantForSweets) {
+                score -= 60;
+            } else {
+                score -= 30;
+            }
         }
     }
 
@@ -369,10 +408,6 @@ export function calculateBaseRelevance(listing: any, queryLower: string, synonym
         if (queryBrands.length > 0) {
             const matchesQueryBrand = queryBrands.some(qb => nameTokens.includes(qb));
             if (matchesQueryBrand) return 110;
-        } else {
-            for (const brand of popularBrands) {
-                if (nameTokens.includes(brand)) return 110;
-            }
         }
     }
 
