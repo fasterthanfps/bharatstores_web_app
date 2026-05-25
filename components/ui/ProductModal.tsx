@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import PriceChart from './PriceChart';
 import { getStoreConfig } from '@/lib/stores';
 import { getDeliveryInfo } from '@/lib/storeDelivery';
@@ -15,7 +16,8 @@ import {
   Truck, 
   Info,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Bell
 } from 'lucide-react';
 
 interface ProductModalProps {
@@ -44,6 +46,43 @@ export default function ProductModal({
   const [activeStore, setActiveStore] = useState<string>('');
 
   const { addItem, removeItem, items } = useSmartCart();
+
+  const [user, setUser] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertTargetPrice, setAlertTargetPrice] = useState<string>('');
+  const [settingAlert, setSettingAlert] = useState(false);
+  const [alertSuccess, setAlertSuccess] = useState<string | null>(null);
+  const [alertError, setAlertError] = useState<string | null>(null);
+
+  // Load user profile & existing price alerts if logged in
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setUser(null);
+    setAlerts([]);
+    setAlertTargetPrice('');
+    setAlertSuccess(null);
+    setAlertError(null);
+
+    // Fetch active alerts
+    fetch('/api/alerts')
+      .then(async (res) => {
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.success) {
+            setAlerts(resData.data || []);
+            // Also get user from supabase client
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            setUser(currentUser);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching user/alerts:', err);
+      });
+  }, [isOpen]);
 
   // Keep state in sync with prop if it changes from outside
   useEffect(() => {
@@ -722,6 +761,152 @@ export default function ProductModal({
                     </div>
                   );
                 })()}
+
+                {/* 🔔 Price Alert Section */}
+                {activeListing && (
+                  <div className="bg-white rounded-3xl border border-masala-border/40 p-5 space-y-3.5 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100 flex-shrink-0">
+                        <Bell className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-masala-text-muted leading-none mb-1">
+                          Price Alert
+                        </p>
+                        <p className="text-xs text-masala-text font-bold leading-normal">
+                          Notify me when this product drops below a target price on {storeConfig?.label}.
+                        </p>
+                      </div>
+                    </div>
+
+                    {user ? (
+                      (() => {
+                        const existingAlert = alerts.find(a => a.listing_id === activeListing.id);
+                        if (existingAlert) {
+                          return (
+                            <div className="bg-emerald-50/50 border border-emerald-100 p-3.5 rounded-2xl flex items-center justify-between gap-3 animate-fade-in">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                                <p className="text-xs text-emerald-800 font-bold">
+                                  Active alert at <strong className="font-extrabold text-sm text-emerald-950">€{existingAlert.target_price.toFixed(2)}</strong>
+                                </p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/alerts?id=${existingAlert.id}`, { method: 'DELETE' });
+                                    const resData = await res.json();
+                                    if (resData.success) {
+                                      setAlerts(prev => prev.filter(a => a.id !== existingAlert.id));
+                                      setAlertSuccess('Alert removed successfully!');
+                                      setTimeout(() => setAlertSuccess(null), 3000);
+                                    } else {
+                                      throw new Error(resData.error?.message || 'Failed to remove alert');
+                                    }
+                                  } catch (err: any) {
+                                    setAlertError(err.message || 'Error removing alert');
+                                    setTimeout(() => setAlertError(null), 4000);
+                                  }
+                                }}
+                                className="text-xs font-black text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider"
+                              >
+                                Delete Alert
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex gap-2 items-center">
+                              <div className="relative flex-1">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-masala-text-muted">€</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0.01"
+                                  value={alertTargetPrice}
+                                  onChange={(e) => setAlertTargetPrice(e.target.value)}
+                                  placeholder={`Target Price (e.g. ${(activeListing.price * 0.9).toFixed(2)})`}
+                                  className="w-full h-11 pl-7 pr-3 rounded-2xl bg-masala-muted/30 border border-masala-border/80 text-xs font-bold text-masala-text placeholder:text-masala-text-muted focus:outline-none focus:ring-2 focus:ring-masala-primary/10 focus:border-masala-primary transition-all"
+                                />
+                              </div>
+                              <button
+                                disabled={settingAlert}
+                                onClick={async () => {
+                                  const target = parseFloat(alertTargetPrice);
+                                  if (isNaN(target) || target <= 0) {
+                                    setAlertError('Please enter a valid target price');
+                                    setTimeout(() => setAlertError(null), 3000);
+                                    return;
+                                  }
+                                  setSettingAlert(true);
+                                  try {
+                                    const res = await fetch('/api/alerts', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ listingId: activeListing.id, targetPrice: target }),
+                                    });
+                                    const resData = await res.json();
+                                    if (res.ok && resData.success) {
+                                      setAlerts(prev => [resData.data, ...prev]);
+                                      setAlertSuccess('Price alert created successfully!');
+                                      setAlertTargetPrice('');
+                                      setTimeout(() => setAlertSuccess(null), 3000);
+                                    } else {
+                                      throw new Error(resData.error?.message || 'Failed to create alert');
+                                    }
+                                  } catch (err: any) {
+                                    setAlertError(err.message || 'Error creating alert');
+                                    setTimeout(() => setAlertError(null), 4000);
+                                  } finally {
+                                    setSettingAlert(false);
+                                  }
+                                }}
+                                className="h-11 px-5 rounded-2xl bg-masala-primary hover:bg-masala-secondary text-white text-xs font-black transition-all whitespace-nowrap active:scale-95 disabled:opacity-50"
+                              >
+                                {settingAlert ? 'Setting...' : 'Set Alert'}
+                              </button>
+                            </div>
+                            
+                            {/* Quick recommendation pill */}
+                            <div className="flex gap-2 flex-wrap">
+                              <button
+                                onClick={() => setAlertTargetPrice((activeListing.price * 0.9).toFixed(2))}
+                                className="text-[10px] font-bold text-masala-text-muted hover:text-masala-primary bg-masala-muted/20 border border-masala-border/40 hover:border-masala-primary/40 px-2.5 py-1 rounded-xl transition-all"
+                              >
+                                💡 Set 10% Off (€{(activeListing.price * 0.9).toFixed(2)})
+                              </button>
+                              <button
+                                onClick={() => setAlertTargetPrice((activeListing.price * 0.8).toFixed(2))}
+                                className="text-[10px] font-bold text-masala-text-muted hover:text-masala-primary bg-masala-muted/20 border border-masala-border/40 hover:border-masala-primary/40 px-2.5 py-1 rounded-xl transition-all"
+                              >
+                                💡 Set 20% Off (€{(activeListing.price * 0.8).toFixed(2)})
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="bg-[#FAF8F5] border border-masala-border/40 p-3.5 rounded-2xl text-center">
+                        <p className="text-xs font-semibold text-masala-text-muted">
+                          Want to track prices? <Link href="/login" className="font-black text-masala-primary hover:underline">Log in</Link> or <Link href="/register" className="font-black text-masala-primary hover:underline">Register</Link> to receive email alerts when the price drops!
+                        </p>
+                      </div>
+                    )}
+
+                    {alertSuccess && (
+                      <p className="text-[11px] font-bold text-emerald-600 bg-emerald-50/50 border border-emerald-100 px-3 py-1.5 rounded-xl animate-fade-in">
+                        ✓ {alertSuccess}
+                      </p>
+                    )}
+                    {alertError && (
+                      <p className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl animate-fade-in">
+                        ⚠ {alertError}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Action Buttons Row */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">

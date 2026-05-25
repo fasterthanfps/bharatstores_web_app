@@ -161,7 +161,6 @@ export default function Header() {
                 </Link>
                 {[
                   { href: '/blog', label: t('nav.blog') },
-                  { href: '/alerts', label: t('nav.priceAlert') },
                   { href: '/account', label: t('nav.account') },
                 ].map(link => (
                   <Link
@@ -223,7 +222,6 @@ export default function Header() {
             </Link>
             {[
               { href: '/blog', label: t('nav.blog') },
-              { href: '/alerts', label: t('nav.priceAlert') },
               { href: '/account', label: t('nav.account') },
             ].map(link => (
               <Link

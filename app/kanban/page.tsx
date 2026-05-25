@@ -38,6 +38,111 @@ const DEFAULT_COLUMNS = [
     { id: 'done', title: 'Done', color: '#2d9c6e', wipLimit: 0, position: 3 }
 ];
 
+const DEFAULT_CARDS: Card[] = [
+    {
+        id: 'c-kanban-sync',
+        colId: 'done',
+        type: 'feature',
+        priority: 'high',
+        title: 'Simplified Team Kanban Board & Cloud Sync',
+        description: 'Created a dedicated engineering board featuring live column limits (WIP), drag-and-drop actions, local storage resilience, and Supabase integration.',
+        dueDate: '2026-05-23',
+        tags: ['kanban', 'supabase', 'done'],
+        assignees: ['akash', 'anvith'],
+        comments: [
+            { author: 'Akash', text: 'Cloud sync tables mapped and migrations applied successfully!', createdAt: '2026-05-23' },
+            { author: 'Anvith', text: 'Looks awesome. Direct updates are super fast.', createdAt: '2026-05-23' }
+        ],
+        checklist: [
+            { text: 'Design DB schema for columns and cards', done: true },
+            { text: 'Implement drag-and-drop client hooks', done: true },
+            { text: 'Connect real-time Supabase sync with fallback', done: true }
+        ],
+        createdAt: '2026-05-23',
+        updatedAt: '2026-05-23'
+    },
+    {
+        id: 'c-auth-gate',
+        colId: 'done',
+        type: 'task',
+        priority: 'high',
+        title: 'Next.js & Supabase Authentication Gate',
+        description: 'Implemented a passcode gate using saffron-mango-cardamom-clove to secure team sprints, handling session recovery and sign-out cleanly.',
+        dueDate: '2026-05-21',
+        tags: ['auth', 'security', 'done'],
+        assignees: ['akash'],
+        comments: [
+            { author: 'Akash', text: 'Passcode is securely stored locally and session persists.', createdAt: '2026-05-21' }
+        ],
+        checklist: [
+            { text: 'Create authorization page with passcode input', done: true },
+            { text: 'Implement route guarding & session state storage', done: true }
+        ],
+        createdAt: '2026-05-21',
+        updatedAt: '2026-05-21'
+    },
+    {
+        id: 'c-hero-backdrop',
+        colId: 'done',
+        type: 'feature',
+        priority: 'medium',
+        title: 'Premium Hero Layout & Drifting Backdrop',
+        description: 'Redesigned the homepage hero section with a centered search bar, exact two-line display, and dynamic background animations to improve first impression.',
+        dueDate: '2026-05-20',
+        tags: ['ui', 'animation', 'done'],
+        assignees: ['anvith'],
+        comments: [
+            { author: 'Anvith', text: 'Drifting shapes perform nicely with hardware acceleration.', createdAt: '2026-05-20' }
+        ],
+        checklist: [
+            { text: 'Develop drifting particles SVG background', done: true },
+            { text: 'Center-align the search input with glassmorphism', done: true }
+        ],
+        createdAt: '2026-05-20',
+        updatedAt: '2026-05-20'
+    },
+    {
+        id: 'c-product-card',
+        colId: 'done',
+        type: 'feature',
+        priority: 'medium',
+        title: 'Spacious Product Card Overhaul',
+        description: 'Redesigned listing cards with cart controls, a high-fidelity Buy Now button, and proper alignment for optimal mobile responsiveness.',
+        dueDate: '2026-05-18',
+        tags: ['ui', 'mobile', 'done'],
+        assignees: ['akash'],
+        comments: [
+            { author: 'Akash', text: 'The Buy Now action bypasses details pages to reduce cart friction.', createdAt: '2026-05-18' }
+        ],
+        checklist: [
+            { text: 'Integrate quantity increments directly on listing', done: true },
+            { text: 'Realign brand/category tags on mobile view', done: true }
+        ],
+        createdAt: '2026-05-18',
+        updatedAt: '2026-05-18'
+    },
+    {
+        id: 'c-scraper-bypass',
+        colId: 'done',
+        type: 'task',
+        priority: 'medium',
+        title: 'Scraper Bypass & Filter Cleaning',
+        description: 'Cleaned up category filters and skipped scraping littleindia.de to bypass WAF security blocking, ensuring clean API results.',
+        dueDate: '2026-05-15',
+        tags: ['scraper', 'debug', 'done'],
+        assignees: ['anvith'],
+        comments: [
+            { author: 'Anvith', text: 'Cleaned up the logs and verified server runs fine.', createdAt: '2026-05-15' }
+        ],
+        checklist: [
+            { text: 'Remove littleindia.de from active list of scrapers', done: true },
+            { text: 'Audit console logs for uncaught WAF redirect errors', done: true }
+        ],
+        createdAt: '2026-05-15',
+        updatedAt: '2026-05-15'
+    }
+];
+
 interface Column {
     id: string;
     title: string;
@@ -110,7 +215,8 @@ export default function DedicatedKanbanPage() {
     const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
     const [editCol, setEditCol] = useState('');
     const [editDue, setEditDue] = useState('');
-    const [editType, setEditType] = useState<'bug' | 'task'>('task');
+    const [editType, setEditType] = useState<'bug' | 'feature' | 'idea' | 'update' | 'task'>('task');
+    const [activeMobileColId, setActiveMobileColId] = useState<string>('todo');
     const [newComment, setNewComment] = useState('');
     const [newCheckItem, setNewCheckItem] = useState('');
 
@@ -224,14 +330,20 @@ export default function DedicatedKanbanPage() {
                         createdAt: c.created_at,
                         updatedAt: c.updated_at,
                     }));
-                    setCards(formattedCards);
+                    if (formattedCards.length === 0) {
+                        setCards(DEFAULT_CARDS);
+                        localStorage.setItem(
+                            LOCAL_STORAGE_STATE_KEY,
+                            JSON.stringify({ columns: activeCols, cards: DEFAULT_CARDS })
+                        );
+                    } else {
+                        setCards(formattedCards);
+                        localStorage.setItem(
+                            LOCAL_STORAGE_STATE_KEY,
+                            JSON.stringify({ columns: activeCols, cards: formattedCards })
+                        );
+                    }
                     setHasCloudSync(true);
-
-                    // Cache in local storage too
-                    localStorage.setItem(
-                        LOCAL_STORAGE_STATE_KEY,
-                        JSON.stringify({ columns: activeCols, cards: formattedCards })
-                    );
                 }
             } catch (err) {
                 console.error('Error initializing Kanban:', err);
@@ -250,15 +362,15 @@ export default function DedicatedKanbanPage() {
             try {
                 const parsed = JSON.parse(localData);
                 setColumns(parsed.columns && parsed.columns.length > 0 ? parsed.columns : DEFAULT_COLUMNS);
-                setCards(parsed.cards || []);
+                setCards(parsed.cards && parsed.cards.length > 0 ? parsed.cards : DEFAULT_CARDS);
             } catch (e) {
                 setColumns(DEFAULT_COLUMNS);
-                setCards([]);
+                setCards(DEFAULT_CARDS);
             }
         } else {
             // First time load - seed basic setup
             setColumns(DEFAULT_COLUMNS);
-            setCards([]);
+            setCards(DEFAULT_CARDS);
         }
     };
 
@@ -325,8 +437,8 @@ export default function DedicatedKanbanPage() {
                     .upsert(dbPayload);
 
                 if (error) throw error;
-            } catch (err) {
-                console.error('Cloud Sync failed for card:', err);
+            } catch (err: any) {
+                console.error('Cloud Sync failed for card:', err?.message || err);
             }
         }
     };
@@ -390,8 +502,8 @@ export default function DedicatedKanbanPage() {
                     .update({ wip_limit: limit })
                     .eq('id', colId);
                 if (error) throw error;
-            } catch (err) {
-                console.error('Failed to sync WIP limit to cloud:', err);
+            } catch (err: any) {
+                console.error('Failed to sync WIP limit to cloud:', err?.message || err);
             }
         }
     };
@@ -436,8 +548,8 @@ export default function DedicatedKanbanPage() {
                     checklist: newCard.checklist,
                 };
                 await supabase.from('kanban_cards').insert(dbPayload);
-            } catch (e) {
-                console.error('Cloud insert failed:', e);
+            } catch (e: any) {
+                console.error('Cloud insert failed:', e?.message || e);
             }
         }
 
@@ -493,7 +605,7 @@ export default function DedicatedKanbanPage() {
         setEditPriority(card.priority);
         setEditCol(card.colId);
         setEditDue(card.dueDate || '');
-        setEditType(card.type === 'bug' ? 'bug' : 'task');
+        setEditType(card.type || 'task');
         setNewComment('');
         setNewCheckItem('');
     };
@@ -533,8 +645,8 @@ export default function DedicatedKanbanPage() {
                     .from('kanban_cards')
                     .delete()
                     .eq('id', cardId);
-            } catch (err) {
-                console.error('Failed to delete card from cloud:', err);
+            } catch (err: any) {
+                console.error('Failed to delete card from cloud:', err?.message || err);
             }
         }
     };
@@ -901,6 +1013,35 @@ export default function DedicatedKanbanPage() {
                     </div>
                 </div>
 
+                {/* Mobile Segmented Columns Tab Navigation */}
+                <div className="md:hidden flex items-center bg-white border border-masala-border/40 rounded-2xl p-1 mb-6 shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                    {columns.map(col => {
+                        const colCards = visibleCards.filter(c => c.colId === col.id);
+                        const isActive = activeMobileColId === col.id;
+                        return (
+                            <button
+                                key={col.id}
+                                onClick={() => setActiveMobileColId(col.id)}
+                                className={`flex-1 min-w-[75px] py-2 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                                    isActive 
+                                        ? 'bg-masala-primary text-white font-extrabold shadow-sm' 
+                                        : 'text-masala-text-muted font-bold hover:bg-masala-muted/30'
+                                }`}
+                            >
+                                <div className="flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: col.color }}></span>
+                                    <span className="text-[10px] uppercase tracking-wider">{col.title}</span>
+                                </div>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                                    isActive ? 'bg-white/20 text-white' : 'bg-masala-muted text-masala-text-muted'
+                                }`}>
+                                    {colCards.length}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
                 {/* Board View */}
                 <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-masala-border scrollbar-track-transparent select-none">
                         {columns.map(col => {
@@ -911,7 +1052,11 @@ export default function DedicatedKanbanPage() {
                             return (
                                 <div
                                     key={col.id}
-                                    className={`flex w-[290px] md:w-[340px] shrink-0 flex-col rounded-2xl border transition-all duration-200 p-4 md:p-5 shadow-sm min-h-[550px] ${
+                                    className={`shrink-0 flex-col rounded-2xl border transition-all duration-200 p-4 md:p-5 shadow-sm min-h-[550px] ${
+                                        activeMobileColId !== col.id 
+                                            ? 'hidden md:flex md:w-[340px]' 
+                                            : 'flex w-full md:w-[340px]'
+                                    } ${
                                         isDragOver 
                                             ? 'bg-masala-accent/5 border-masala-accent/30 border-dashed translate-y-[-2px]' 
                                             : 'bg-white border-masala-border/40'
@@ -982,11 +1127,17 @@ export default function DedicatedKanbanPage() {
                                                         {/* Top indicator category strip */}
                                                         <div className="mb-3.5 flex items-center justify-between">
                                                             <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border ${
-                                                                card.type === 'bug' 
-                                                                    ? 'bg-red-50 text-red-700 border-red-200/40' 
-                                                                    : 'bg-blue-50 text-blue-700 border-blue-200/40'
+                                                                card.type === 'bug' ? 'bg-red-50 text-red-700 border-red-200/40' :
+                                                                card.type === 'feature' ? 'bg-purple-50 text-purple-700 border-purple-200/40' :
+                                                                card.type === 'idea' ? 'bg-amber-50 text-amber-700 border-amber-200/40' :
+                                                                card.type === 'update' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/40' :
+                                                                'bg-blue-50 text-blue-700 border-blue-200/40'
                                                             }`}>
-                                                                {card.type === 'bug' ? '⚠️ Issue' : '📌 Task'}
+                                                                {card.type === 'bug' ? '⚠️ Issue' : 
+                                                                 card.type === 'feature' ? '✨ Feature' : 
+                                                                 card.type === 'idea' ? '💡 Idea' : 
+                                                                 card.type === 'update' ? '⚡ Update' : 
+                                                                 '📌 Task'}
                                                             </span>
 
                                                             {/* Priority Dot */}
@@ -1137,6 +1288,9 @@ export default function DedicatedKanbanPage() {
                                     >
                                         <option value="task">📌 Task</option>
                                         <option value="bug">⚠️ Issue</option>
+                                        <option value="feature">✨ Feature</option>
+                                        <option value="idea">💡 Idea</option>
+                                        <option value="update">⚡ Update</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1205,9 +1359,17 @@ export default function DedicatedKanbanPage() {
                         <div className="flex items-center justify-between border-b border-masala-border/40 px-6 py-4 bg-masala-bg">
                             <div className="flex items-center gap-2">
                                 <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border ${
-                                    selectedCard.type === 'bug' ? 'bg-red-50 text-red-700 border-red-200/50' : 'bg-blue-50 text-blue-700 border-blue-200/50'
+                                    selectedCard.type === 'bug' ? 'bg-red-50 text-red-700 border-red-200/50' : 
+                                    selectedCard.type === 'feature' ? 'bg-purple-50 text-purple-700 border-purple-200/50' :
+                                    selectedCard.type === 'idea' ? 'bg-amber-50 text-amber-700 border-amber-200/50' :
+                                    selectedCard.type === 'update' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' :
+                                    'bg-blue-50 text-blue-700 border-blue-200/50'
                                 }`}>
-                                    {selectedCard.type === 'bug' ? '⚠️ Issue' : '📌 Task'}
+                                    {selectedCard.type === 'bug' ? '⚠️ Issue' : 
+                                     selectedCard.type === 'feature' ? '✨ Feature' : 
+                                     selectedCard.type === 'idea' ? '💡 Idea' : 
+                                     selectedCard.type === 'update' ? '⚡ Update' : 
+                                     '📌 Task'}
                                 </span>
                                 <span className="text-[10px] text-masala-text-light font-bold">#{selectedCard.id}</span>
                             </div>
@@ -1351,6 +1513,9 @@ export default function DedicatedKanbanPage() {
                                     >
                                         <option value="task">📌 Task</option>
                                         <option value="bug">⚠️ Issue</option>
+                                        <option value="feature">✨ Feature</option>
+                                        <option value="idea">💡 Idea</option>
+                                        <option value="update">⚡ Update</option>
                                     </select>
                                 </div>
 

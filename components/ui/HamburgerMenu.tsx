@@ -8,7 +8,6 @@ const NAV_ITEMS = [
   { href: '/',        icon: Home,     label: 'Home' },
   { href: '/search',  icon: Search,   label: 'Search' },
   { href: '/deals',   icon: Tag,      label: 'Deals', badge: 'NEW' },
-  { href: '/alerts',  icon: Bell,     label: 'Price Alerts' },
   { href: '/account', icon: User,     label: 'Account' },
   { href: '/blog',    icon: BookOpen, label: 'Blog' },
 ];
