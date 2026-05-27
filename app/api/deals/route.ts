@@ -1,29 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+/** Strip noise like "- Sale Item [BBD: 31 May 2026]" from product names */
+function cleanProductName(name: string): string {
+  return name
+    .replace(/\s*-?\s*Sale\s+Item\s*/gi, '')
+    .replace(/\[BBD:[^\]]*\]/gi, '')
+    .replace(/\[.*?\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'percentage';
   const cat = searchParams.get('cat') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
-  
-  const limit = type === 'flash' ? 4 : 48;
+
+  const limit = type === 'flash' ? 6 : 48;
   const skip = (page - 1) * limit;
 
   try {
     const supabase = await createClient();
-    
+
     let query = supabase
       .from('product_deals')
       .select('*', { count: 'exact' })
-      .eq('in_stock', true); // only show in stock deals
+      .eq('in_stock', true);
 
-    // Apply specific query logic based on type
     if (type === 'percentage') {
       query = query.order('discount_percent', { ascending: false });
     } else if (type === 'daily') {
       const today = new Date();
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
       query = query
         .gte('last_updated', today.toISOString())
         .order('discount_percent', { ascending: false });
@@ -35,7 +44,7 @@ export async function GET(request: NextRequest) {
         .order('savings_amount', { ascending: false });
     } else if (type === 'flash') {
       query = query
-        .gt('discount_percent', 15)
+        .gte('discount_percent', 15)
         .order('discount_percent', { ascending: false });
     } else if (type === 'category' && cat) {
       query = query
@@ -45,21 +54,19 @@ export async function GET(request: NextRequest) {
       query = query.order('discount_percent', { ascending: false });
     }
 
-    // Apply pagination
-    const { data: rawDeals, count, error } = await query
-      .range(skip, skip + limit - 1);
+    const { data: rawDeals, count, error } = await query.range(skip, skip + limit - 1);
 
     if (error) {
-      console.error('Deals API Error fetching from Supabase:', error);
+      console.error('Deals API Error:', error);
       return NextResponse.json({ deals: [], total: 0, page });
     }
 
-    // Map fields from product_deals columns to client expectations
     const deals = (rawDeals || []).map((d: any) => ({
       productId: d.product_id,
-      term: d.product_name,
+      listingId: d.listing_id,
+      term: cleanProductName(d.product_name),
+      rawTerm: d.product_name, // keep original for search fallback
       category: d.category,
-      brand: null,
       imageUrl: d.image_url,
       bestPrice: Number(d.current_price),
       comparePrice: Number(d.avg_price_7d),
@@ -68,13 +75,13 @@ export async function GET(request: NextRequest) {
       weightLabel: d.weight,
       discountPercent: Number(d.discount_percent),
       savingsAmount: Number(d.savings_amount),
-      lastUpdated: d.last_updated
+      pricePerKg: d.price_per_kg ? Number(d.price_per_kg) : null,
+      storeUrl: d.url, // direct store product URL
+      lastUpdated: d.last_updated,
     }));
 
     return NextResponse.json({ deals, total: count || 0, page }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200'
-      }
+      headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200' }
     });
   } catch (error) {
     console.error('Deals API Error:', error);

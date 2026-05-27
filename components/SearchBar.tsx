@@ -129,7 +129,7 @@ export default function SearchBar({
             : '0 2px 12px rgba(139,32,32,0.06)',
         }}
       >
-        <Search className={`absolute transition-colors ${open ? 'text-masala-primary' : 'text-masala-text-muted'} ${isHero ? 'left-5 w-5 h-5' : 'left-4 w-4 h-4'}`} />
+        <Search className={`absolute transition-colors ${open ? 'text-masala-primary' : 'text-masala-text-muted'} ${isHero ? 'left-4 sm:left-5 w-5 h-5' : 'left-3 sm:left-4 w-4 h-4'}`} />
 
         <input
           ref={inputRef}
@@ -146,7 +146,7 @@ export default function SearchBar({
           inputMode="search"
           enterKeyHint="search"
           className={`w-full bg-transparent border-none outline-none ring-0 focus:ring-0 text-masala-text placeholder:text-masala-text-muted/50 font-semibold tracking-wide ${
-            isHero ? 'pl-14 pr-44 text-[17px]' : 'h-11 pl-11 pr-32 text-[14px]'
+            isHero ? 'pl-11 sm:pl-14 pr-16 sm:pr-44 text-[15px] sm:text-[17px]' : 'h-11 pl-9 sm:pl-11 pr-12 sm:pr-32 text-[13px] sm:text-[14px]'
           }`}
           style={isHero ? { height: '60px' } : {}}
         />
@@ -155,7 +155,7 @@ export default function SearchBar({
           <button type="button"
             onMouseDown={e => e.preventDefault()}
             onClick={() => { setQuery(''); setSuggestions([]); inputRef.current?.focus(); }}
-            className={`absolute p-2 text-masala-text-muted hover:text-masala-text transition-colors ${isHero ? 'right-36' : 'right-28'}`}>
+            className={`absolute p-2 text-masala-text-muted hover:text-masala-text transition-colors ${isHero ? 'right-14 sm:right-36' : 'right-10 sm:right-28'}`}>
             <X className="w-4 h-4" />
           </button>
         )}
@@ -164,12 +164,10 @@ export default function SearchBar({
           onMouseDown={e => e.preventDefault()}
           onClick={() => submit(query)}
           className={`absolute right-2 bg-masala-primary text-white font-extrabold tracking-[0.02em] hover:scale-[1.02] active:scale-[0.97] transition-all flex items-center justify-center gap-2 ${
-            isHero ? 'text-[14px] rounded-xl' : 'text-[10px] rounded-xl'
+            isHero ? 'text-[14px] rounded-xl px-4 sm:px-7' : 'text-[10px] rounded-xl px-2.5 sm:px-4'
           }`}
           style={{
             height: isHero ? '46px' : '32px',
-            paddingLeft: isHero ? '28px' : '18px',
-            paddingRight: isHero ? '28px' : '18px',
             background: '#8B2020',
           }}
           onMouseEnter={e => (e.currentTarget.style.background = '#6B1818')}

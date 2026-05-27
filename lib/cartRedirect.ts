@@ -11,6 +11,7 @@ const STORE_BASE_URLS: Record<string, string> = {
   littleindia:  'https://www.little-india.de',
   spicevillage: 'https://www.spicevillage.eu',
   grocera:      'https://www.grocera.de',
+  dostana:      'https://dostana-foods.com',
 };
 
 export interface CartItem {

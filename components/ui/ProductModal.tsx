@@ -7,6 +7,7 @@ import { getStoreConfig } from '@/lib/stores';
 import { getDeliveryInfo } from '@/lib/storeDelivery';
 import { buildRedirectUrl } from '@/lib/utm';
 import { useSmartCart } from '@/stores/useSmartCart';
+import { getProductPlaceholder } from '@/lib/utils/image';
 import { 
   X, 
   ShoppingCart, 
@@ -44,6 +45,7 @@ export default function ProductModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeStore, setActiveStore] = useState<string>('');
+  const [imgSrc, setImgSrc] = useState<string>('');
 
   const { addItem, removeItem, items } = useSmartCart();
 
@@ -64,24 +66,28 @@ export default function ProductModal({
     setAlertSuccess(null);
     setAlertError(null);
 
-    // Fetch active alerts
-    fetch('/api/alerts')
-      .then(async (res) => {
-        if (res.ok) {
-          const resData = await res.json();
-          if (resData.success) {
-            setAlerts(resData.data || []);
-            // Also get user from supabase client
-            const { createClient } = await import('@/lib/supabase/client');
-            const supabase = createClient();
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            setUser(currentUser);
+    // Defer the heavy auth/alert load until after the modal slide animation completes
+    const timer = setTimeout(() => {
+      fetch('/api/alerts')
+        .then(async (res) => {
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData.success) {
+              setAlerts(resData.data || []);
+              // Get user from supabase client
+              const { createClient } = await import('@/lib/supabase/client');
+              const supabase = createClient();
+              const { data: { user: currentUser } } = await supabase.auth.getUser();
+              setUser(currentUser);
+            }
           }
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching user/alerts:', err);
-      });
+        })
+        .catch((err) => {
+          console.error('Error fetching user/alerts:', err);
+        });
+    }, 350);
+
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Keep state in sync with prop if it changes from outside
@@ -97,26 +103,41 @@ export default function ProductModal({
 
     setLoading(true);
     setError(null);
+    
+    const startMountTime = Date.now();
+
     fetch(`/api/products/${productId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load product details');
         return res.json();
       })
       .then((resData) => {
-        setData(resData);
-        // Default to cheapest in-stock offer; fallback to cheapest.
-        if (resData?.product?.prices?.length > 0) {
-          const sorted = [...resData.product.prices].sort((a: any, b: any) => Number(a.price) - Number(b.price));
-          const bestInStock = sorted.find((p: any) => p.inStock);
-          setActiveStore((bestInStock || sorted[0]).storeSlug);
-        }
+        const elapsed = Date.now() - startMountTime;
+        const delay = Math.max(0, 300 - elapsed);
+        
+        setTimeout(() => {
+          setData(resData);
+          // Default to cheapest in-stock offer; fallback to cheapest.
+          if (resData?.product?.prices?.length > 0) {
+            const sorted = [...resData.product.prices].sort((a: any, b: any) => Number(a.price) - Number(b.price));
+            const bestInStock = sorted.find((p: any) => p.inStock);
+            setActiveStore((bestInStock || sorted[0]).storeSlug);
+          }
+          const imageUrl = resData?.product?.imageUrl;
+          const category = resData?.product?.category;
+          const name = resData?.product?.name;
+          setImgSrc(imageUrl || getProductPlaceholder(category, name));
+          setLoading(false);
+        }, delay);
       })
       .catch((err) => {
         console.error('Error fetching modal details:', err);
-        setError(err.message || 'Something went wrong');
-      })
-      .finally(() => {
-        setLoading(false);
+        const elapsed = Date.now() - startMountTime;
+        const delay = Math.max(0, 300 - elapsed);
+        setTimeout(() => {
+          setError(err.message || 'Something went wrong');
+          setLoading(false);
+        }, delay);
       });
   }, [isOpen, productId]);
 
@@ -238,7 +259,11 @@ export default function ProductModal({
       <div 
         onClick={onClose}
         className="absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
-        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+        style={{ 
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', 
+          backgroundSize: '24px 24px',
+          willChange: 'opacity'
+        }}
       />
 
       {/* Modal Container */}
@@ -257,7 +282,7 @@ export default function ProductModal({
           overflow-hidden
           modal-mobile-sheet
         `}
-        style={{ height: 'min(92vh, 720px)' }}
+        style={{ height: 'min(92vh, 720px)', willChange: 'transform, opacity' }}
       >
         {/* Mobile drag handle */}
         <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -345,10 +370,17 @@ export default function ProductModal({
             {/* Mobile-only top strip */}
             <div className="md:hidden flex items-center gap-3 px-4 py-3 -mx-6 -mt-6 mb-6 border-b border-masala-border bg-white">
               <div className="w-14 h-14 flex-shrink-0 bg-masala-muted rounded-xl overflow-hidden flex items-center justify-center p-1">
-                {product?.imageUrl
-                  ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain" />
-                  : <span className="text-2xl">🛒</span>
-                }
+                <img
+                  src={imgSrc}
+                  alt={product?.name}
+                  className="w-full h-full object-contain"
+                  onError={() => {
+                    const fallback = getProductPlaceholder(product?.category, product?.name);
+                    if (imgSrc !== fallback) {
+                      setImgSrc(fallback);
+                    }
+                  }}
+                />
               </div>
               <div className="flex gap-1.5 overflow-x-auto scrollbar-none flex-1">
                 {product?.prices?.map((p: any) => {
@@ -393,15 +425,17 @@ export default function ProductModal({
                       />
                     );
                   })()}
-                  {product?.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="relative z-10 max-h-full max-w-full object-contain drop-shadow-xl hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <span className="text-5xl relative z-10">🛒</span>
-                  )}
+                  <img
+                    src={imgSrc}
+                    alt={product?.name}
+                    className="relative z-10 max-h-full max-w-full object-contain drop-shadow-xl hover:scale-110 transition-transform duration-500"
+                    onError={() => {
+                      const fallback = getProductPlaceholder(product?.category, product?.name);
+                      if (imgSrc !== fallback) {
+                        setImgSrc(fallback);
+                      }
+                    }}
+                  />
                 </div>
 
                 {/* Store Tabs selector */}

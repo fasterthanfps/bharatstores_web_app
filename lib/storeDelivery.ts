@@ -74,6 +74,14 @@ export const STORE_DELIVERY: Record<string, StoreDeliveryInfo> = {
     deliveryDays: '1-3',
     deliveryNote: 'Free delivery over €35',
   },
+  dostana: {
+    storeSlug: 'dostana',
+    freeDeliveryThreshold: 39,
+    standardDeliveryFee: 4.90,
+    minOrderValue: null,
+    deliveryDays: '2-4',
+    deliveryNote: 'Free delivery over €39',
+  },
 };
 
 /** Lookup by store slug (tolerates spaces, mixed case). */

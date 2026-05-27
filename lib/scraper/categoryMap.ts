@@ -5,11 +5,12 @@
  * Keys are matched against the search query (substring or token match).
  * Add new categories here to improve scraper coverage.
  *
- * Stores: grocera | jamoona | littleindia | nammamarkt | dookan | swadesh | angaadi | spicevillage
+ * Stores: grocera | jamoona | littleindia | nammamarkt | dookan | swadesh | angaadi | spicevillage | dostana
  */
 export const categoryMap: Record<string, Partial<{
     grocera: string; jamoona: string; littleindia: string; nammamarkt: string;
     dookan: string; swadesh: string; angaadi: string; spicevillage: string;
+    dostana: string;
 }>> = {
     // ── Rice ────────────────────────────────────────────────────────────────────
     "basmati rice": {
@@ -494,6 +495,7 @@ export function findCategoryUrl(
     store: keyof Partial<{
         grocera: string; jamoona: string; littleindia: string; nammamarkt: string;
         dookan: string; swadesh: string; angaadi: string; spicevillage: string;
+        dostana: string;
     }>
 ): string | null {
     const q = query.toLowerCase().trim();

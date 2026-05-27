@@ -11,6 +11,7 @@ export interface StoreConfig {
 export const STORE_CONFIG: Record<string, StoreConfig> = {
   dookan:       { label: 'Dookan',        initials: 'DO', color: '#DBEAFE', textColor: '#1D4ED8' },
   jamoona:      { label: 'Jamoona',       initials: 'JA', color: '#FEF9C3', textColor: '#854D0E' },
+  dostana:      { label: 'Dostana',       initials: 'DF', color: '#FFEDD5', textColor: '#C2410C' },
   swadesh:      { label: 'Swadesh',       initials: 'SW', color: '#DCFCE7', textColor: '#166534' },
   nammamarkt:   { label: 'Namma Markt',   initials: 'NM', color: '#EDE9FE', textColor: '#5B21B6' },
   angaadi:      { label: 'Angaadi',       initials: 'AN', color: '#FFE4E6', textColor: '#9F1239' },
@@ -50,6 +51,7 @@ export function getStoreConfig(slugOrName: string): StoreConfig {
 export const ALL_STORES = [
   { id: 'dookan',       label: 'Dookan' },
   { id: 'jamoona',      label: 'Jamoona' },
+  { id: 'dostana',      label: 'Dostana' },
   { id: 'swadesh',      label: 'Swadesh' },
   { id: 'nammamarkt',   label: 'Namma Markt' },
   { id: 'angaadi',      label: 'Angaadi' },

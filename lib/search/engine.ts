@@ -34,9 +34,17 @@ export const SYNONYM_MAP: Record<string, string[]> = {
     marmalade: ['jam', 'preserve', 'fruit spread'],
     rice: ['chawal', 'basmati'],
     basmati: ['rice', 'chawal'],
+    dates: ['khajoor', 'khajur', 'datteln'],
+    khajoor: ['dates', 'khajur', 'datteln'],
+    khajur: ['dates', 'khajoor', 'datteln'],
+    datteln: ['dates', 'khajoor', 'khajur'],
 };
 
 export const WORD_SYNONYMS: Record<string, string[]> = {
+    dates: ['khajoor', 'khajur', 'datteln'],
+    khajoor: ['dates', 'khajur', 'datteln'],
+    khajur: ['dates', 'khajoor', 'datteln'],
+    datteln: ['dates', 'khajoor', 'khajur'],
     sahi: ['shahi'],
     shahi: ['sahi'],
     paneer: ['cottage', 'cheese'],
@@ -119,6 +127,16 @@ const INTENT_PROFILES: IntentProfile[] = [
             'paratha', 'samosa', 'biryani', 'curry', 'kofta', 'bhurji', 'dish',
             'ready-to-eat', 'meal', 'entree', 'gravy mix',
             'palak', 'mutter', 'matar', 'shahi', 'kadai', 'karahi', 'butter', 'chilli', 'chili'
+        ]
+    },
+    {
+        keys: ['sweet', 'sweets', 'mithai', 'dessert', 'ladoo', 'laddu', 'barfi', 'halwa', 'pedha', 'peda', 'rasgulla', 'gulab jamun', 'kheer', 'soan papdi', 'rasmalai', 'jalebi'],
+        include: ['ladoo', 'laddu', 'barfi', 'halwa', 'pedha', 'peda', 'rasgulla', 'gulab jamun', 'kheer', 'soan papdi', 'mithai', 'dessert', 'rasmalai', 'jalebi', 'cham cham', 'sandesh', 'petha', 'gujiya', 'shrikhand', 'sweet mix', 'kulfi', 'rasgula', 'sweet', 'sweets'],
+        exclude: [
+            'biscuit', 'biscuits', 'cookie', 'cookies', 'chips', 'chip', 'crisps', 'soup', 'paneer', 'cheese',
+            'sauce', 'sauces', 'ketchup', 'chutney', 'pickle', 'achaar', 'banana chips', 'plantain chips', 'corn soup',
+            'masala', 'spices', 'spice', 'gravy', 'namak para', 'namakpara', 'mathari', 'mathri', 'puri', 'poori',
+            'tamarind', 'imli', 'paste', 'jam'
         ]
     }
 ];
@@ -654,6 +672,7 @@ export async function saveAndReturnListings(
         swadesh: 'swadesh.eu',
         angaadi: 'angaadi-online.de',
         spicevillage: 'spicevillage.eu',
+        dostana: 'dostana-foods.com',
     };
 
     // Pre-fetch all stores

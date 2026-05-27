@@ -216,7 +216,7 @@ export default function DedicatedKanbanPage() {
     const [editCol, setEditCol] = useState('');
     const [editDue, setEditDue] = useState('');
     const [editType, setEditType] = useState<'bug' | 'feature' | 'idea' | 'update' | 'task'>('task');
-    const [activeMobileColId, setActiveMobileColId] = useState<string>('todo');
+    const [activeMobileColId, setActiveMobileColId] = useState<string>('');
     const [newComment, setNewComment] = useState('');
     const [newCheckItem, setNewCheckItem] = useState('');
 
@@ -224,6 +224,27 @@ export default function DedicatedKanbanPage() {
     const [newColColor, setNewColColor] = useState('#3b82c4');
 
     const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Touch drag refs for native mobile drag-drop
+    const touchCardIdRef = useRef<string | null>(null);
+    const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+    const touchDragActiveRef = useRef(false);
+    const ghostRef = useRef<HTMLDivElement | null>(null);
+    const wasDraggingRef = useRef(false);
+    const swipeStartXRef = useRef<number | null>(null);
+
+    // Prevent context menu on draggable items
+    useEffect(() => {
+        const handleContextMenu = (e: MouseEvent) => {
+            if ((e.target as HTMLElement).closest('[draggable="true"]')) {
+                e.preventDefault();
+            }
+        };
+        window.addEventListener('contextmenu', handleContextMenu);
+        return () => {
+            window.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, []);
 
     // 1. Initial Authentication & Load Data
     useEffect(() => {
@@ -374,12 +395,143 @@ export default function DedicatedKanbanPage() {
         }
     };
 
+    // Smart default: pick column with most cards when cards load on mobile
+    useEffect(() => {
+        if (cards.length === 0) return;
+        if (activeMobileColId) return; // already set by user interaction
+
+        const colCounts = columns.map(col => ({
+            id: col.id,
+            count: cards.filter(c => c.colId === col.id).length,
+        }));
+
+        const inProgress = colCounts.find(c => c.id === 'inprogress');
+        if (inProgress && inProgress.count > 0) {
+            setActiveMobileColId('inprogress');
+            return;
+        }
+
+        const mostPopulated = colCounts.reduce((best, curr) =>
+            curr.count > best.count ? curr : best, { id: '', count: -1 }
+        );
+
+        setActiveMobileColId(
+            mostPopulated.count > 0 ? mostPopulated.id : (columns[0]?.id || 'todo')
+        );
+    }, [cards, columns]); // runs when cards or columns change
+
     // Helper to persist state to Local Storage
     const saveStateToLocalStorage = (nextCols: Column[], nextCards: Card[]) => {
         localStorage.setItem(
             LOCAL_STORAGE_STATE_KEY,
             JSON.stringify({ columns: nextCols, cards: nextCards })
         );
+    };
+
+    // ─── Native Touch Drag-Drop Handlers ─────────────────────────────────────
+    const createGhost = (cardEl: HTMLElement, x: number, y: number) => {
+        const ghost = cardEl.cloneNode(true) as HTMLDivElement;
+        ghost.style.cssText = `
+            position: fixed;
+            left: ${x - cardEl.offsetWidth / 2}px;
+            top: ${y - 40}px;
+            width: ${cardEl.offsetWidth}px;
+            opacity: 0.85;
+            transform: rotate(2deg) scale(1.03);
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            transition: none;
+        `;
+        document.body.appendChild(ghost);
+        ghostRef.current = ghost;
+    };
+
+    const removeGhost = () => {
+        if (ghostRef.current) {
+            ghostRef.current.remove();
+            ghostRef.current = null;
+        }
+    };
+
+    const getColIdFromPoint = (x: number, y: number): string | null => {
+        const els = document.elementsFromPoint(x, y);
+        for (const el of els) {
+            const colId = (el as HTMLElement).dataset?.dropCol;
+            if (colId) return colId;
+        }
+        return null;
+    };
+
+    const handleTouchStart = (e: React.TouchEvent, cardId: string) => {
+        const touch = e.touches[0];
+        touchCardIdRef.current = cardId;
+        touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+        touchDragActiveRef.current = false;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent, cardEl: HTMLElement) => {
+        if (!touchCardIdRef.current || !touchStartPosRef.current) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - touchStartPosRef.current.x;
+        const dy = touch.clientY - touchStartPosRef.current.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!touchDragActiveRef.current && dist > 8) {
+            touchDragActiveRef.current = true;
+            setDraggingCardId(touchCardIdRef.current);
+            createGhost(cardEl, touch.clientX, touch.clientY);
+        }
+
+        if (touchDragActiveRef.current && ghostRef.current) {
+            e.preventDefault();
+            ghostRef.current.style.left = `${touch.clientX - cardEl.offsetWidth / 2}px`;
+            ghostRef.current.style.top  = `${touch.clientY - 40}px`;
+            const colId = getColIdFromPoint(touch.clientX, touch.clientY);
+            setDragOverColId(colId);
+        }
+    };
+
+    const handleTouchEnd = async (e: React.TouchEvent) => {
+        const cardId = touchCardIdRef.current;
+        const wasDragging = touchDragActiveRef.current;
+
+        touchCardIdRef.current = null;
+        touchStartPosRef.current = null;
+        touchDragActiveRef.current = false;
+        removeGhost();
+
+        if (wasDragging) {
+            wasDraggingRef.current = true;
+            setTimeout(() => { wasDraggingRef.current = false; }, 300);
+        }
+
+        if (!wasDragging || !cardId) {
+            setDraggingCardId(null);
+            setDragOverColId(null);
+            return;
+        }
+
+        const touch = e.changedTouches[0];
+        const targetColId = getColIdFromPoint(touch.clientX, touch.clientY);
+
+        setDraggingCardId(null);
+        setDragOverColId(null);
+
+        if (targetColId) {
+            const card = cards.find(c => c.id === cardId);
+            if (card && card.colId !== targetColId) {
+                const updatedCard = {
+                    ...card,
+                    colId: targetColId,
+                    updatedAt: new Date().toISOString().slice(0, 10),
+                };
+                setLastDroppedCardId(cardId);
+                setTimeout(() => setLastDroppedCardId(null), 800);
+                await saveCard(updatedCard, cards);
+            }
+        }
     };
 
     // 2. Keyboard Shortcuts Handler
@@ -902,37 +1054,37 @@ export default function DedicatedKanbanPage() {
                 
                 {/* Stats Bar */}
                 {/* Stats Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                    <div className="rounded-2xl bg-white border border-masala-border/40 p-3 md:p-4 shadow-sm flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-masala-muted/40 text-masala-primary flex items-center justify-center text-xs md:text-sm">🗂️</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-5">
+                    <div className="rounded-xl md:rounded-2xl bg-white border border-masala-border/40 p-2.5 md:p-4 shadow-sm flex items-center gap-2 md:gap-4">
+                        <div className="w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-masala-muted/40 text-masala-primary flex items-center justify-center text-base flex-shrink-0">🗂️</div>
                         <div>
-                            <h5 className="text-[9px] font-bold uppercase tracking-wider text-masala-text-light truncate">Total Tasks</h5>
-                            <p className="text-lg md:text-xl font-extrabold text-masala-text">{cards.length}</p>
+                            <h5 className="text-[8px] md:text-[9px] font-bold uppercase tracking-wide text-masala-text-light truncate">Total Tasks</h5>
+                            <p className="text-base md:text-xl font-extrabold text-masala-text">{cards.length}</p>
                         </div>
                     </div>
-                    <div className="rounded-2xl bg-white border border-masala-border/40 p-3 md:p-4 shadow-sm flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-green-50 text-green-700 flex items-center justify-center text-xs md:text-sm">✅</div>
+                    <div className="rounded-xl md:rounded-2xl bg-white border border-masala-border/40 p-2.5 md:p-4 shadow-sm flex items-center gap-2 md:gap-4">
+                        <div className="w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-green-50 text-green-700 flex items-center justify-center text-base flex-shrink-0">✅</div>
                         <div>
-                            <h5 className="text-[9px] font-bold uppercase tracking-wider text-masala-text-light truncate">Completed</h5>
-                            <p className="text-lg md:text-xl font-extrabold text-green-700">
+                            <h5 className="text-[8px] md:text-[9px] font-bold uppercase tracking-wide text-masala-text-light truncate">Completed</h5>
+                            <p className="text-base md:text-xl font-extrabold text-green-700">
                                 {cards.filter(c => c.colId === 'done').length}
                             </p>
                         </div>
                     </div>
-                    <div className="rounded-2xl bg-white border border-masala-border/40 p-3 md:p-4 shadow-sm flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-red-50 text-red-700 flex items-center justify-center text-xs md:text-sm">⚠️</div>
+                    <div className="rounded-xl md:rounded-2xl bg-white border border-masala-border/40 p-2.5 md:p-4 shadow-sm flex items-center gap-2 md:gap-4">
+                        <div className="w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-red-50 text-red-700 flex items-center justify-center text-base flex-shrink-0">⚠️</div>
                         <div>
-                            <h5 className="text-[9px] font-bold uppercase tracking-wider text-masala-text-light truncate">Active Issues</h5>
-                            <p className="text-lg md:text-xl font-extrabold text-red-700">
+                            <h5 className="text-[8px] md:text-[9px] font-bold uppercase tracking-wide text-masala-text-light truncate">Active Issues</h5>
+                            <p className="text-base md:text-xl font-extrabold text-red-700">
                                 {cards.filter(c => c.type === 'bug' && c.colId !== 'done').length}
                             </p>
                         </div>
                     </div>
-                    <div className="rounded-2xl bg-white border border-masala-border/40 p-3 md:p-4 shadow-sm flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-xs md:text-sm">⚡</div>
+                    <div className="rounded-xl md:rounded-2xl bg-white border border-masala-border/40 p-2.5 md:p-4 shadow-sm flex items-center gap-2 md:gap-4">
+                        <div className="w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-base flex-shrink-0">⚡</div>
                         <div>
-                            <h5 className="text-[9px] font-bold uppercase tracking-wider text-masala-text-light truncate">Done Rate</h5>
-                            <p className="text-lg md:text-xl font-extrabold text-purple-700">
+                            <h5 className="text-[8px] md:text-[9px] font-bold uppercase tracking-wide text-masala-text-light truncate">Done Rate</h5>
+                            <p className="text-base md:text-xl font-extrabold text-purple-700">
                                 {cards.length > 0 ? Math.round((cards.filter(c => c.colId === 'done').length / cards.length) * 100) : 0}%
                             </p>
                         </div>
@@ -945,60 +1097,63 @@ export default function DedicatedKanbanPage() {
                     <div className="flex items-center gap-2.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
                         <button
                             onClick={() => setActiveFilter('all')}
-                            className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
+                            className={`flex-shrink-0 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition-all border ${
                                 activeFilter === 'all'
                                     ? 'bg-masala-primary text-white border-masala-primary shadow-sm'
                                     : 'text-masala-text-muted border-masala-border/60 bg-white hover:bg-masala-muted/30'
                             }`}
                         >
-                            All Tasks & Issues
+                            <span className="hidden sm:inline">All Tasks &amp; Issues</span>
+                            <span className="sm:hidden">All</span>
                         </button>
                         {[
-                            { type: 'task', label: 'Tasks Only', icon: CheckSquare },
-                            { type: 'bug', label: 'Issues Only', icon: Bug },
+                            { type: 'task', label: 'Tasks Only', shortLabel: 'Tasks', icon: CheckSquare },
+                            { type: 'bug', label: 'Issues Only', shortLabel: 'Issues', icon: Bug },
                         ].map(f => {
                             const Icon = f.icon;
                             return (
                                 <button
                                     key={f.type}
                                     onClick={() => setActiveFilter(f.type)}
-                                    className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
+                                    className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition-all border ${
                                         activeFilter === f.type
                                             ? 'bg-masala-primary text-white border-masala-primary shadow-sm'
                                             : 'text-masala-text-muted border-masala-border/60 bg-white hover:bg-masala-muted/30'
                                     }`}
                                 >
                                     <Icon className="h-3 w-3" />
-                                    {f.label}
+                                    <span className="hidden sm:inline">{f.label}</span>
+                                    <span className="sm:hidden">{f.shortLabel}</span>
                                 </button>
                             );
                         })}
                         <div className="flex-shrink-0 w-[1px] h-6 bg-masala-border/60 self-center mx-1"></div>
                         <button
                             onClick={() => setMyCardsOnly(!myCardsOnly)}
-                            className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
+                            className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs font-bold transition-all border ${
                                 myCardsOnly
                                     ? 'bg-masala-accent/10 text-masala-accent border-masala-accent/30 shadow-sm'
                                     : 'text-masala-text-muted border-masala-border/60 bg-white hover:bg-masala-muted/30'
                             }`}
                         >
                             <User className="h-3 w-3" />
-                            Assigned to Me
+                            <span className="hidden sm:inline">Assigned to Me</span>
+                            <span className="sm:hidden">Mine</span>
                         </button>
                     </div>
 
                     {/* Search and Action Toolbar */}
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:flex-initial">
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <div className="relative flex-1 min-w-0">
                             <input
                                 ref={searchInputRef}
                                 type="text"
                                 placeholder="Search..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full md:w-48 rounded-full bg-white border border-masala-border/80 px-4 py-2 pl-9 text-xs text-masala-text outline-none focus:border-masala-accent md:focus:w-60 transition-all placeholder-masala-text-light shadow-sm"
+                                className="w-full rounded-full bg-white border border-masala-border/80 px-4 py-2 pl-9 text-xs text-masala-text outline-none focus:border-masala-accent transition-all placeholder-masala-text-light shadow-sm"
                             />
-                            <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-masala-text-light" />
+                            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-masala-text-light" />
                         </div>
 
                         <button
@@ -1006,44 +1161,68 @@ export default function DedicatedKanbanPage() {
                                 setNewCardColId('todo');
                                 setNewCardOpen(true);
                             }}
-                            className="flex-shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-masala-accent px-5 py-2 text-xs font-extrabold text-white hover:bg-masala-secondary shadow-md active:translate-y-0.5 transition-all cursor-pointer"
+                            className="flex-shrink-0 flex items-center gap-1 rounded-full bg-masala-accent px-4 py-2 text-xs font-extrabold text-white hover:bg-masala-secondary shadow-md active:scale-95 transition-all cursor-pointer"
                         >
-                            <Plus className="h-3.5 w-3.5" /> Add Task
+                            <Plus className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Add Task</span>
+                            <span className="sm:hidden">Add</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Mobile Segmented Columns Tab Navigation */}
-                <div className="md:hidden flex items-center bg-white border border-masala-border/40 rounded-2xl p-1 mb-6 shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
-                    {columns.map(col => {
-                        const colCards = visibleCards.filter(c => c.colId === col.id);
-                        const isActive = activeMobileColId === col.id;
-                        return (
-                            <button
-                                key={col.id}
-                                onClick={() => setActiveMobileColId(col.id)}
-                                className={`flex-1 min-w-[75px] py-2 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                                    isActive 
-                                        ? 'bg-masala-primary text-white font-extrabold shadow-sm' 
-                                        : 'text-masala-text-muted font-bold hover:bg-masala-muted/30'
-                                }`}
-                            >
-                                <div className="flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: col.color }}></span>
-                                    <span className="text-[10px] uppercase tracking-wider">{col.title}</span>
-                                </div>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
-                                    isActive ? 'bg-white/20 text-white' : 'bg-masala-muted text-masala-text-muted'
-                                }`}>
-                                    {colCards.length}
-                                </span>
-                            </button>
-                        );
-                    })}
+                {/* Mobile Segmented Columns Tab Navigation - pill-style scrollable */}
+                <div className="md:hidden mb-5 flex-shrink-0">
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+                        {columns.map(col => {
+                            const colCards = visibleCards.filter(c => c.colId === col.id);
+                            const isActive = activeMobileColId === col.id;
+                            return (
+                                <button
+                                    key={col.id}
+                                    data-drop-col={col.id}
+                                    onClick={() => setActiveMobileColId(col.id)}
+                                    className={`flex-shrink-0 flex items-center gap-2 px-4 h-9
+                                        rounded-full text-[11px] font-bold transition-all whitespace-nowrap
+                                        border ${
+                                        isActive
+                                            ? 'bg-masala-primary text-white border-masala-primary shadow-sm'
+                                            : 'bg-white text-masala-text-muted border-masala-border/60 hover:border-masala-primary/40'
+                                    }`}
+                                >
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: isActive ? 'white' : col.color }} />
+                                    {col.title}
+                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                                        isActive ? 'bg-white/25 text-white' : 'bg-masala-muted text-masala-text-muted'
+                                    }`}>
+                                        {colCards.length}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* Board View */}
-                <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-masala-border scrollbar-track-transparent select-none">
+                <div
+                    className="flex gap-6 overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-masala-border scrollbar-track-transparent select-none"
+                    onTouchStart={(e) => {
+                        if ((e.target as HTMLElement).closest('[draggable]')) return;
+                        swipeStartXRef.current = e.touches[0].clientX;
+                    }}
+                    onTouchEnd={(e) => {
+                        if (swipeStartXRef.current === null) return;
+                        const dx = e.changedTouches[0].clientX - swipeStartXRef.current;
+                        swipeStartXRef.current = null;
+                        if (Math.abs(dx) < 50) return;
+                        const currentIdx = columns.findIndex(c => c.id === activeMobileColId);
+                        if (dx < 0 && currentIdx < columns.length - 1) {
+                            setActiveMobileColId(columns[currentIdx + 1].id);
+                        } else if (dx > 0 && currentIdx > 0) {
+                            setActiveMobileColId(columns[currentIdx - 1].id);
+                        }
+                    }}
+                >
                         {columns.map(col => {
                             const colCards = visibleCards.filter(c => c.colId === col.id);
                             const allColCards = cards.filter(c => c.colId === col.id);
@@ -1052,15 +1231,14 @@ export default function DedicatedKanbanPage() {
                             return (
                                 <div
                                     key={col.id}
-                                    className={`shrink-0 flex-col rounded-2xl border transition-all duration-200 p-4 md:p-5 shadow-sm min-h-[550px] ${
-                                        activeMobileColId !== col.id 
-                                            ? 'hidden md:flex md:w-[340px]' 
-                                            : 'flex w-full md:w-[340px]'
-                                    } ${
-                                        isDragOver 
-                                            ? 'bg-masala-accent/5 border-masala-accent/30 border-dashed translate-y-[-2px]' 
-                                            : 'bg-white border-masala-border/40'
-                                    }`}
+                                    data-drop-col={col.id}
+                                    className={`shrink-0 flex-col rounded-2xl border transition-all duration-200 p-4 md:p-5 shadow-sm min-h-[400px]
+                                        ${activeMobileColId === col.id ? 'flex' : 'hidden'} md:flex md:w-[340px] w-full
+                                        ${
+                                            isDragOver
+                                                ? 'bg-masala-accent/5 border-masala-accent/30 border-dashed'
+                                                : 'bg-white border-masala-border/40'
+                                        }`}
                                     onDragOver={(e) => {
                                         e.preventDefault();
                                         if (dragOverColId !== col.id) setDragOverColId(col.id);
@@ -1115,7 +1293,14 @@ export default function DedicatedKanbanPage() {
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, card.id)}
                                                         onDragEnd={handleDragEnd}
-                                                        onClick={() => handleOpenDetail(card)}
+                                                        onTouchStart={(e) => handleTouchStart(e, card.id)}
+                                                        onTouchMove={(e) => handleTouchMove(e, e.currentTarget)}
+                                                        onTouchEnd={handleTouchEnd}
+                                                        onClick={() => {
+                                                            if (wasDraggingRef.current) return;
+                                                            handleOpenDetail(card);
+                                                        }}
+                                                        style={{ touchAction: 'none' }}
                                                         className={`group relative cursor-grab rounded-2xl bg-white border border-masala-border/50 p-5 hover:border-masala-accent/40 hover:shadow-lg transition-all duration-300 active:cursor-grabbing hover:scale-[1.01] ${
                                                             isOverdue ? 'border-red-300 bg-red-50/5' : ''
                                                         } ${
@@ -1208,7 +1393,7 @@ export default function DedicatedKanbanPage() {
                                                                             };
                                                                             await saveCard(updatedCard, cards);
                                                                         }}
-                                                                        className="rounded bg-masala-muted hover:bg-masala-accent hover:text-white px-2 py-0.5 text-[9px] font-extrabold text-masala-text-muted transition cursor-pointer"
+                                                                        className="rounded-xl bg-masala-muted hover:bg-masala-accent hover:text-white px-3 py-2 text-[10px] font-extrabold text-masala-text-muted transition cursor-pointer min-h-[36px] flex items-center"
                                                                     >
                                                                         {col.id === 'todo' ? 'Start ⚡' : col.id === 'inprogress' ? 'Finish ✅' : 'Unblock ⚡'}
                                                                     </button>
@@ -1249,8 +1434,9 @@ export default function DedicatedKanbanPage() {
 
             {/* Modal: New Card */}
             {newCardOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-masala-text/30 backdrop-blur-sm p-4 animate-scale-in">
-                    <div className="w-full max-w-lg rounded-3xl bg-white border border-masala-border/60 p-6 md:p-8 shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-masala-text/30 backdrop-blur-sm p-0 sm:p-4 animate-scale-in">
+                    <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-white border border-masala-border/60 p-5 sm:p-8 shadow-2xl max-h-[90dvh] overflow-y-auto">
+                        <div className="sm:hidden w-10 h-1 rounded-full bg-masala-border mx-auto mb-4 flex-shrink-0" />
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-xs font-black uppercase tracking-wider text-masala-text">Create Task</h3>
                             <button onClick={() => setNewCardOpen(false)} className="text-masala-text-light hover:text-masala-text transition p-1 rounded-full hover:bg-masala-muted/30">
@@ -1353,8 +1539,9 @@ export default function DedicatedKanbanPage() {
 
             {/* Modal: Card Detail / Edit */}
             {selectedCard && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-masala-text/30 backdrop-blur-sm p-4 overflow-y-auto animate-scale-in">
-                    <div className="w-full max-w-2xl rounded-3xl bg-white border border-masala-border/60 shadow-2xl overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-masala-text/30 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto animate-scale-in">
+                    <div className="w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl bg-white border border-masala-border/60 shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto">
+                        <div className="sm:hidden w-10 h-1 rounded-full bg-masala-border mx-auto mt-3 mb-1 flex-shrink-0" />
                         {/* Detail Header */}
                         <div className="flex items-center justify-between border-b border-masala-border/40 px-6 py-4 bg-masala-bg">
                             <div className="flex items-center gap-2">

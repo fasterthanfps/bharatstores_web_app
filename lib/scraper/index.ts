@@ -6,12 +6,14 @@ import { DookanScraper } from './stores/dookan';
 import { SwadeshScraper } from './stores/swadesh';
 import { AngaadiScraper } from './stores/angaadi';
 import { SpiceVillageScraper } from './stores/spicevillage';
+import { DostanaScraper } from './stores/dostana';
 import type { ScraperResult } from '@/types/scraper';
 
 export class ScraperOrchestrator {
     private scrapers = [
         new DookanScraper(),       // Shopify — fastest & best coverage
         new JamoonaScraper(),      // Shopify
+        new DostanaScraper(),      // Shopify
         new SpiceVillageScraper(), // Shopify
         new NammamarktScraper(),   // Shopify
         new AngaadiScraper(),      // WooCommerce

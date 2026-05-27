@@ -243,6 +243,17 @@ a, button {
   animation: float 2.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
+/* Gradient Shift */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
+}
+
 /* Slide In From Bottom */
 @keyframes slideInFromBottom {
   from { opacity: 0; transform: translateY(24px); }

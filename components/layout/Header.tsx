@@ -198,7 +198,9 @@ export default function Header() {
           {/* Logo + Language Toggle */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <Logo />
-            <LanguageToggle size="compact" />
+            <div className="hidden sm:block">
+              <LanguageToggle size="compact" />
+            </div>
           </div>
 
 
@@ -263,6 +265,10 @@ export default function Header() {
               </span>
             )}
           </button>
+
+          <div className="md:hidden flex-shrink-0">
+            <HamburgerMenu />
+          </div>
         </div>
 
         {/* ── Mobile: Full-width search bar ── */}

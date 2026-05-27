@@ -1,9 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Check, ExternalLink, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { buildRedirectUrl } from '@/lib/utm';
 import { getStoreConfig } from '@/lib/stores';
 import type { GroupedListing } from '@/lib/search/engine';
+import { getProductPlaceholder } from '@/lib/utils/image';
 
 interface ProductCardImageProps {
     listing: GroupedListing;
@@ -40,18 +42,26 @@ export default function ProductCardImage({
         position,
     });
 
+    const [imgSrc, setImgSrc] = useState(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
+
+    useEffect(() => {
+        setImgSrc(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
+    }, [listing.image_url, listing.product_category, listing.product_name]);
+
     return (
         <div className="relative bg-gradient-to-b from-masala-muted/20 to-masala-muted/40 aspect-[4/3] flex items-center justify-center overflow-hidden">
-            {listing.image_url ? (
-                <img
-                    src={listing.image_url}
-                    alt={listing.product_name}
-                    className="w-full h-full object-cover p-3 group-hover:scale-[1.04] transition-transform duration-400"
-                    loading="lazy"
-                />
-            ) : (
-                <span className="text-4xl select-none">🛒</span>
-            )}
+            <img
+                src={imgSrc}
+                alt={listing.product_name}
+                className="w-full h-full object-contain p-3 group-hover:scale-[1.04] transition-transform duration-400"
+                loading="lazy"
+                onError={() => {
+                    const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
+                    if (imgSrc !== fallback) {
+                        setImgSrc(fallback);
+                    }
+                }}
+            />
 
             {/* Store badge — bottom left */}
             <div className="absolute bottom-2 left-2 flex items-center gap-1 flex-wrap">

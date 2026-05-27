@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import HeroSearch from '@/components/search/HeroSearch';
 import HowItWorks from '@/components/sections/HowItWorks';
 import CategoryGrid from '@/components/sections/CategoryGrid';
-import HeroParticles from '@/components/home/HeroParticles';
 import FloatingPriceCard from '@/components/ui/FloatingPriceCard';
 
 const MOST_SEARCHED = ['Basmati Rice', 'Amul Ghee', 'MDH Masala', 'Toor Dal', 'Atta'];
@@ -62,16 +61,14 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen">
-      {/* ── Infinite Ambient Background (Orbs + Floating Particles fixed over viewport) ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        {/* Ambient glowing orbs */}
-        <div className="hero-orb hero-orb--primary" />
-        <div className="hero-orb hero-orb--accent" />
-        <div className="hero-orb hero-orb--warm" />
-
-        {/* Floating grocery particles drifting globally across viewport */}
-        <HeroParticles count={32} />
-      </div>
+      {/* ── Light Gradient Animation Background ── */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0 animate-gradient-shift" 
+        style={{
+          backgroundImage: 'linear-gradient(-45deg, #FAF7F2, #F0EAE0, #FFF4EC, #E8F5EE)',
+        }}
+        aria-hidden="true" 
+      />
 
       {/* HERO SECTION */}
       <section className="relative z-10 min-h-[calc(100vh-56px)] flex items-center overflow-hidden pt-8">

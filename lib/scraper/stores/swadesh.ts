@@ -8,7 +8,7 @@ import { findCategoryUrl } from '../categoryMap';
 export class SwadeshScraper extends BaseScraper {
     storeId = 'swadesh';
     storeName = 'Swadesh';
-    private baseUrl = 'https://www.swadesh.de';
+    private baseUrl = 'https://swadesh.eu';
 
     async scrape(query: string): Promise<ScraperResult> {
         const start = Date.now();
@@ -49,7 +49,7 @@ export class SwadeshScraper extends BaseScraper {
                             productUrl: item.permalink || `${this.baseUrl}/?s=${encodeURIComponent(query)}&post_type=product`,
                             name,
                             price: isNaN(price) ? 0 : price,
-                            imageUrl: item.images?.[0]?.src || '',
+                            imageUrl: this.extractRealImageUrl(item.images?.[0]?.src, item.images?.[0]?.srcset, item.images?.[0]?.thumbnail),
                             availability: isOutOfStock ? 'OUT_OF_STOCK' : 'IN_STOCK',
                             weightLabel: this.extractWeightLabel(name),
                             weightGrams,
@@ -105,7 +105,12 @@ export class SwadeshScraper extends BaseScraper {
             const priceMatch = singlePriceText.match(/(\d+)[,.](\d{2})/);
             if (priceMatch) {
                 const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
-                const imgSrc = $('.woocommerce-product-gallery__image img').first().attr('src') || '';
+                const img = $('.woocommerce-product-gallery__image img').first();
+                const imgSrc = this.extractRealImageUrl(
+                    img.attr('data-src') || img.attr('src'),
+                    img.attr('srcset'),
+                    img.attr('data-lazy-src')
+                );
                 const outOfStock = $('.out-of-stock').length > 0 || $('.stock').text().toLowerCase().includes('out of stock');
                 const weightGrams = this.parseWeightToGrams(singleTitle);
 
@@ -142,7 +147,12 @@ export class SwadeshScraper extends BaseScraper {
                 const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
 
                 const href = $el.find('a.woocommerce-LoopProduct-link, a').first().attr('href') || '';
-                const imgSrc = $el.find('img').first().attr('src') || $el.find('img').first().attr('data-src') || '';
+                const img = $el.find('img').first();
+                const src = img.attr('src');
+                const srcset = img.attr('srcset');
+                const dataSrc = img.attr('data-src') || img.attr('data-lazy-src');
+                const thumbnail = img.attr('data-thumbnail') || img.attr('data-lazyload');
+                const imgSrc = this.extractRealImageUrl(dataSrc || src, srcset, thumbnail) || dataSrc || '';
 
                 const outOfStock = 
                     $el.find('[class*="out-of-stock"]').length > 0 || 
@@ -168,6 +178,34 @@ export class SwadeshScraper extends BaseScraper {
         });
 
         return listings;
+    }
+
+    private extractRealImageUrl(
+        src: string | null | undefined,
+        srcset?: string | null | undefined,
+        thumbnail?: string | null | undefined
+    ): string {
+        if (src && !src.startsWith('data:')) {
+            return src;
+        }
+
+        // Try parsing srcset
+        if (srcset) {
+            const parts = srcset.trim().split(/\s*,\s*/);
+            if (parts[0]) {
+                const url = parts[0].split(/\s+/)[0];
+                if (url && !url.startsWith('data:')) {
+                    return url;
+                }
+            }
+        }
+
+        // Try thumbnail
+        if (thumbnail && !thumbnail.startsWith('data:')) {
+            return thumbnail;
+        }
+
+        return '';
     }
 
     private extractWeightLabel(name: string): string | undefined {

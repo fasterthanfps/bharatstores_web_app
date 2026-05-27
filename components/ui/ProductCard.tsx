@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSmartCart } from '@/stores/useSmartCart';
 import { getStoreConfig } from '@/lib/stores';
 import { buildRedirectUrl } from '@/lib/utm';
@@ -8,6 +8,7 @@ import { Heart, Plus, Minus } from 'lucide-react';
 import ProductModal from './ProductModal';
 import type { GroupedListing } from '@/lib/search/engine';
 import { useRouter } from 'next/navigation';
+import { getProductPlaceholder } from '@/lib/utils/image';
 
 interface ProductCardProps {
   listing: GroupedListing;
@@ -22,8 +23,12 @@ interface ProductCardProps {
 export default function ProductCard({ listing, rank, searchQuery, isCompared, onCompareToggle, isBestPrice, position }: ProductCardProps) {
   const router = useRouter();
   const [modalOpen,    setModalOpen]    = useState(false);
-  const [imgError,     setImgError]     = useState(false);
+  const [imgSrc,       setImgSrc]       = useState(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
   const [wishlisted,   setWishlisted]   = useState(false);
+
+  useEffect(() => {
+    setImgSrc(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
+  }, [listing.image_url, listing.product_category, listing.product_name]);
 
   const { addItem, removeItem, items, updateQuantity } = useSmartCart();
 
@@ -81,19 +86,19 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
         <div>
           {/* ── IMAGE ZONE ── */}
           <div className="relative w-full aspect-square bg-[#F6F1EA]/60 rounded-[18px] overflow-hidden mb-2.5">
-            {/* Product image — fills the zone */}
-            {!imgError && listing.image_url ? (
-              <img
-                src={listing.image_url}
-                alt={listing.product_name}
-                className="absolute inset-0 w-full h-full object-contain p-3
-                  group-hover:scale-105 transition-transform duration-300"
-                onError={() => setImgError(true)}
-                loading="lazy"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-5xl">🛒</div>
-            )}
+            <img
+              src={imgSrc}
+              alt={listing.product_name}
+              className="absolute inset-0 w-full h-full object-contain p-3
+                group-hover:scale-105 transition-transform duration-300"
+              onError={() => {
+                const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
+                if (imgSrc !== fallback) {
+                  setImgSrc(fallback);
+                }
+              }}
+              loading="lazy"
+            />
 
             {/* Wishlist heart — top right */}
             <button
