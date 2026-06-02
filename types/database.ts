@@ -605,12 +605,70 @@ export type Database = {
           }
         ]
       }
+      blog_posts: {
+        Row: {
+          author: string
+          content: string
+          cover_url: string | null
+          created_at: string | null
+          excerpt: string | null
+          id: string
+          lang: string
+          published_at: string | null
+          seo_desc: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          author?: string
+          content?: string
+          cover_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          lang?: string
+          published_at?: string | null
+          seo_desc?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          author?: string
+          content?: string
+          cover_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          lang?: string
+          published_at?: string | null
+          seo_desc?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       is_admin: { Args: { uid: string }; Returns: boolean }
+      increment_blog_views: { Args: { post_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

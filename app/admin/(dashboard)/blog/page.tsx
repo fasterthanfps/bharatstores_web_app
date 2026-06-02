@@ -17,10 +17,20 @@ export default async function AdminBlogPage() {
   const drafts    = posts?.filter(p => p.status === 'draft').length ?? 0;
   const archived  = posts?.filter(p => p.status === 'archived').length ?? 0;
 
+  const typedPosts = (posts || []).map(p => ({
+    ...p,
+    status: p.status as 'draft' | 'published' | 'archived',
+    lang: p.lang as 'en' | 'de' | 'both',
+    tags: p.tags || [],
+    views: p.views || 0,
+    created_at: p.created_at || '',
+    updated_at: p.updated_at || '',
+  }));
+
   return (
     <div className="space-y-6 text-masala-text">
       <BlogCMSClient
-        initialPosts={posts ?? []}
+        initialPosts={typedPosts}
         stats={{ published, drafts, archived }}
       />
     </div>
