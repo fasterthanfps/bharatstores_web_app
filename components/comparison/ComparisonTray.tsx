@@ -84,7 +84,7 @@ function ComparisonModal() {
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-masala-text">Price Comparison</h2>
-                            <p className="text-xs text-masala-text/50 font-medium">{items.length} products · all Indian shops in Germany</p>
+                            <p className="text-xs text-masala-text/50 font-medium">{items.length} products · all Indian shops in Europe</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

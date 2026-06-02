@@ -38,6 +38,9 @@ export const SYNONYM_MAP: Record<string, string[]> = {
     khajoor: ['dates', 'khajur', 'datteln'],
     khajur: ['dates', 'khajoor', 'datteln'],
     datteln: ['dates', 'khajoor', 'khajur'],
+    ipl: ['cricket', 'jersey', 't-shirt', 'shirt', 'csk', 'rcb', 'kkr', 'merchandise'],
+    cricket: ['ipl', 'jersey', 't-shirt', 'shirt', 'merchandise'],
+    jersey: ['ipl', 'cricket', 't-shirt', 'shirt', 'merchandise'],
 };
 
 export const WORD_SYNONYMS: Record<string, string[]> = {
@@ -76,6 +79,12 @@ export const WORD_SYNONYMS: Record<string, string[]> = {
     urid: ['urad'],
     toor: ['tuvar', 'arhar'],
     tuvar: ['toor', 'arhar'],
+    ipl: ['cricket', 'jersey', 'csk', 'rcb', 'kkr'],
+    cricket: ['ipl', 'jersey'],
+    jersey: ['ipl', 'cricket', 't-shirt', 'shirt'],
+    csk: ['ipl', 'chennai', 'super', 'kings'],
+    rcb: ['ipl', 'royal', 'challengers', 'bengaluru'],
+    kkr: ['ipl', 'kolkata', 'knight', 'riders'],
 };
 
 type IntentProfile = {
@@ -160,7 +169,7 @@ function hasTerm(text: string, term: string): boolean {
 
 import { smartTruncateQuery } from './normalize';
 import { analyzeProductImageAndName } from './productAnalyzer';
-import { getProductImage } from '../services/imageRecovery';
+import { getProductPlaceholder } from '../utils/image';
 
 function levenshteinDistance(a: string, b: string): number {
     if (a.length === 0) return b.length;
@@ -290,8 +299,40 @@ export function scoreRelevance(listing: any, queryLower: string, synonyms: strin
         }
     }
 
-    // Clamp score to ensure it stays in the valid range of 3 to 120 (unless original rawScore was above 120)
-    return Math.max(3, Math.min(Math.max(120, rawScore), score));
+    // 3. Masala keyword query intent adjustments
+    const isMasalaQuery = allQueryTerms.some(term => 
+        term === 'masala' || term === 'masale' || term === 'masalas' || 
+        term === 'spices' || term === 'spice' || term === 'spices masala'
+    );
+
+    if (isMasalaQuery) {
+        // Authentic spices and spice mixes
+        const isAuthenticMasala = category === 'spices' || 
+            /\b(garam|sabji|sabzi|meat|chicken|mutton|fish|egg|chat|chaat|panipuri|pani\s+puri|chana|biryani|sambar|sambhar|kitchen\s+king|curry|tandoori|tikka|tea|chai)\s+masala\b/.test(name) ||
+            /\bmasala\s+(mix|powder|spices|spice|blend|seasoning)\b/.test(name) ||
+            (category === 'condiments' && /\b(chat|chaat|panipuri|pani\s+puri)\s+masala\b/.test(name));
+
+        // Snacks, instant food (noodles), or beverages flavored with masala but aren't spice mixes
+        const isMasalaFlavoredNonSpice = category === 'snacks' || category === 'instant' || category === 'beverages' ||
+            (/\b(noodle|noodles|maggi|tastemaker|pasta|chips|crisps|snack|snacks|namkeen|sev|bhujia|mixture|boondi|peanuts|tea|chai)\b/.test(name) && !/\b(tea|chai)\s+masala\b/.test(name));
+
+        if (isAuthenticMasala && !isMasalaFlavoredNonSpice) {
+            // Highly authentic masala mixes get scored higher
+            score += 45;
+            
+            // Additional prioritize for user specified masalas: sabji, meat, chat, garam, panipuri
+            const isPrioritizedMasala = /\b(sabji|sabzi|kitchen\s+king|meat|chicken|mutton|fish|egg|chat|chaat|garam|panipuri|pani\s+puri)\b/.test(name);
+            if (isPrioritizedMasala) {
+                score += 15;
+            }
+        } else if (isMasalaFlavoredNonSpice) {
+            // Demote snacks, instant food, tea and other non-spice flavored products heavily in pure masala search
+            score -= 50;
+        }
+    }
+
+    // Clamp score to ensure it stays in the valid range of 3 to 140 (unless original rawScore was above 140)
+    return Math.max(3, Math.min(Math.max(140, rawScore), score));
 }
 
 export function calculateBaseRelevance(listing: any, queryLower: string, synonyms: string[]): number {
@@ -430,8 +471,8 @@ export function calculateBaseRelevance(listing: any, queryLower: string, synonym
     }
 
     // ── Tier 6: Search-terms tag match ─────────────────────────────────────────
-    if (searchTerms.some(t => t.toLowerCase() === queryLower)) return 40;
-    if (searchTerms.some(t => t.toLowerCase().startsWith(queryLower))) return 30;
+    if (searchTerms.some(t => t.toLowerCase() === queryLower)) return 95;
+    if (searchTerms.some(t => t.toLowerCase().startsWith(queryLower))) return 85;
 
     // ── Tier 7: Multi-word query token overlap ─────────────────────────────────
     if (coreTokens.length > 0) {
@@ -538,15 +579,47 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
 
         const best = sortedGroup[0];
         
+        // Helper to check if an image is a real product image
+        const isValidProductImage = (url: string | null | undefined): boolean => {
+            if (!url) return false;
+            const u = url.toLowerCase().trim();
+            if (u === '' || u === 'null' || u === 'undefined') return false;
+            if (u.includes('unsplash.com')) return false;
+            if (u.includes('placeholder')) return false;
+            return true;
+        };
+
+        // Helper to identify team key to avoid mismatched jersey borrowing
+        const getTeamKey = (name: string): string | null => {
+            const n = name.toLowerCase();
+            if (n.includes('chennai') || n.includes('csk')) return 'csk';
+            if (n.includes('punjab')) return 'punjab';
+            if (n.includes('rajasthan')) return 'rajasthan';
+            if (n.includes('delhi')) return 'delhi';
+            if (n.includes('kolkata') || n.includes('kkr')) return 'kkr';
+            if (n.includes('bengaluru') || n.includes('bangalore') || n.includes('rcb')) return 'rcb';
+            if (n.includes('mumbai')) return 'mumbai';
+            if (n.includes('hyderabad')) return 'hyderabad';
+            if (n.includes('lucknow')) return 'lucknow';
+            if (n.includes('gujarat')) return 'gujarat';
+            return null;
+        };
+
         // Find the first valid image in the group
-        let validImage = sortedGroup.find((l: any) => l.image_url && l.image_url.trim() !== '')?.image_url;
+        let validImage = sortedGroup.find((l: any) => isValidProductImage(l.image_url))?.image_url;
 
         // Fallback logic: if no image in the exact group, borrow one from a highly similar product
-        if (!validImage || validImage.trim() === '') {
+        if (!validImage) {
             const bestTokens = (best.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
             if (bestTokens.length >= 2) {
+                const bestTeam = getTeamKey(best.product_name || '');
                 const fallbackItem = scored.find((other: any) => {
-                    if (!other.image_url || other.image_url.trim() === '') return false;
+                    if (!isValidProductImage(other.image_url)) return false;
+
+                    // Don't cross-borrow between different IPL teams
+                    const otherTeam = getTeamKey(other.product_name || '');
+                    if (bestTeam !== otherTeam) return false;
+
                     const otherTokens = (other.product_name || '').toLowerCase().split(/[^a-z0-9]+/).filter((t: string) => t.length >= 3 && !/^\d+/.test(t));
                     let overlap = 0;
                     for (const t of bestTokens) {
@@ -562,10 +635,9 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
             }
         }
 
-        // Tier 2 Fallback: if still no image anywhere, generate a beautiful, realistic, server-cached AI mockup
-        if (!validImage || validImage.trim() === '') {
-            const slug = best.product_slug || best.id;
-            validImage = getProductImage(best.product_name, slug, best.product_category);
+        // Tier 2 Fallback: if still no image anywhere, use a clean professional placeholder
+        if (!validImage) {
+            validImage = getProductPlaceholder(best.product_category, best.product_name);
         }
 
         return {
@@ -573,7 +645,7 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
             product_name: best.product_name,
             product_slug: best.product_slug,
             product_category: best.product_category,
-            image_url: validImage || best.image_url,
+            image_url: validImage,
             _score: best._score,
             bestPrice: Number(best.price),
             bestStore: best.store_name,
@@ -586,7 +658,7 @@ export function groupListingsByProduct(listings: any[], queryLower: string, syno
                 price: Number(l.price),
                 availability: l.availability,
                 product_url: l.product_url,
-                image_url: l.image_url || validImage, // Inherit best available/generated image for this product
+                image_url: isValidProductImage(l.image_url) ? l.image_url : validImage, // Inherit best available/borrowed image or placeholder
                 weight_label: l.weight_label,
                 price_per_kg: l.price_per_kg ? Number(l.price_per_kg) : null,
                 store_handle: l.store_handle,

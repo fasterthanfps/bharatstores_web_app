@@ -4,56 +4,12 @@ import { useRouter } from 'next/navigation';
 import HeroSearch from '@/components/search/HeroSearch';
 import HowItWorks from '@/components/sections/HowItWorks';
 import CategoryGrid from '@/components/sections/CategoryGrid';
-import FloatingPriceCard from '@/components/ui/FloatingPriceCard';
 
 const MOST_SEARCHED = ['Basmati Rice', 'Amul Ghee', 'MDH Masala', 'Toor Dal', 'Atta'];
 
 const STATS = [
   { value: '5,000+', label: 'Products' },
-  { value: '40%',    label: 'Avg savings' },
-];
-
-const FLOATING_CARDS = [
-  {
-    store: 'DOOKAN',
-    storeColor: '#DBEAFE',
-    storeTextColor: '#1D4ED8',
-    productName: 'MDH Masala 100g',
-    originalPrice: 3.49,
-    currentPrice: 2.19,
-    savePct: 37,
-    pos: 'absolute left-4 sm:left-12 top-[15%] -rotate-3 animate-float-slow hidden sm:block',
-  },
-  {
-    store: 'JAMOONA',
-    storeColor: '#FEF9C3',
-    storeTextColor: '#854D0E',
-    productName: 'Basmati Rice 5kg',
-    originalPrice: 12.99,
-    currentPrice: 8.49,
-    savePct: 35,
-    pos: 'absolute right-4 sm:right-12 top-[10%] rotate-2 animate-float-medium hidden sm:block',
-  },
-  {
-    store: 'SWADESH',
-    storeColor: '#DCFCE7',
-    storeTextColor: '#166534',
-    productName: 'Toor Dal 1kg',
-    originalPrice: 4.29,
-    currentPrice: 2.79,
-    savePct: 35,
-    pos: 'absolute right-4 sm:right-10 bottom-[12%] -rotate-2 animate-float-slow hidden sm:block',
-  },
-  {
-    store: 'DOOKAN',
-    storeColor: '#DBEAFE',
-    storeTextColor: '#1D4ED8',
-    productName: 'Ghee 500ml',
-    originalPrice: 8.99,
-    currentPrice: 5.99,
-    savePct: 33,
-    pos: 'absolute left-4 sm:left-10 bottom-[8%] rotate-3 animate-float-medium hidden sm:block',
-  },
+  { value: '40%', label: 'Avg savings' },
 ];
 
 export default function Home() {
@@ -62,30 +18,20 @@ export default function Home() {
   return (
     <main className="relative min-h-screen">
       {/* ── Light Gradient Animation Background ── */}
-      <div 
-        className="absolute inset-0 pointer-events-none z-0 animate-gradient-shift" 
+      <div
+        className="absolute inset-0 pointer-events-none z-0 animate-gradient-shift"
         style={{
-          backgroundImage: 'linear-gradient(-45deg, #FAF7F2, #F0EAE0, #FFF4EC, #E8F5EE)',
+          backgroundImage: 'linear-gradient(-45deg, #FAF7F2, #FFFDF8, #FAF4E8, #F7F0E3, #FFFBF5)',
         }}
-        aria-hidden="true" 
+        aria-hidden="true"
       />
 
       {/* HERO SECTION */}
       <section className="relative z-10 min-h-[calc(100vh-56px)] flex items-center overflow-hidden pt-8">
-        {/* ── Floating price cards ── */}
-        {FLOATING_CARDS.map((card, i) => (
-          <FloatingPriceCard
-            key={i}
-            store={card.store}
-            storeColor={card.storeColor}
-            storeTextColor={card.storeTextColor}
-            productName={card.productName}
-            originalPrice={card.originalPrice}
-            currentPrice={card.currentPrice}
-            savePct={card.savePct}
-            className={card.pos}
-          />
-        ))}
+        {/* ── Ambient Glow Orbs in the background ── */}
+        <div className="hero-orb hero-orb--primary" />
+        <div className="hero-orb hero-orb--accent" />
+        <div className="hero-orb hero-orb--warm" />
 
         {/* ── Main content ── */}
         <div className="relative z-10 w-full max-w-[800px] mx-auto px-6 text-center py-8">
@@ -117,7 +63,7 @@ export default function Home() {
 
           {/* Subtitle */}
           <p className="text-[17px] sm:text-[19px] text-masala-text-muted leading-relaxed max-w-[600px] mx-auto text-center mt-3 animate-slide-up animation-delay-200">
-            Compare prices across Indian stores in Germany. Smart, fast, and 100% free.
+            Compare prices across Indian stores in Europe. Smart, fast, and 100% free.
           </p>
 
           {/* Search bar directly in the middle! */}

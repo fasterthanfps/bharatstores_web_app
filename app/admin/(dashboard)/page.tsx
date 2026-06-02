@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
-import { BarChart3, ShoppingBag, MousePointer, Store, TrendingUp } from 'lucide-react';
+import { BarChart3, ShoppingBag, MousePointer, Store, TrendingUp, FileText } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Admin – Analytics' };
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,8 @@ export default async function AdminPage() {
         { count: totalClicks },
         { data: topProducts },
         { data: recentRuns },
+        { count: totalBlogPosts },
+        { count: recentClicks },
     ] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }),
         supabase.from('listings').select('*', { count: 'exact', head: true }),
@@ -29,12 +31,19 @@ export default async function AdminPage() {
             .select('*')
             .order('started_at', { ascending: false })
             .limit(5),
+        supabase.from('blog_posts').select('*', { count: 'exact', head: true }),
+        supabase
+            .from('clicks')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     ]);
 
     const metrics = [
-        { label: 'Produkte', value: totalProducts ?? 0, icon: ShoppingBag, color: 'text-blue-600' },
-        { label: 'Listings', value: totalListings ?? 0, icon: Store, color: 'text-emerald-600' },
-        { label: 'Klicks', value: totalClicks ?? 0, icon: MousePointer, color: 'text-masala-accent' },
+        { label: 'Produkte',      value: totalProducts  ?? 0, icon: ShoppingBag, color: 'text-blue-600'          },
+        { label: 'Listings',      value: totalListings  ?? 0, icon: Store,        color: 'text-emerald-600'       },
+        { label: 'Klicks',        value: totalClicks    ?? 0, icon: MousePointer, color: 'text-masala-accent'     },
+        { label: 'Blog Posts',    value: totalBlogPosts ?? 0, icon: FileText,     color: 'text-purple-600'        },
+        { label: 'Klicks (7 Tage)', value: recentClicks ?? 0, icon: TrendingUp,  color: 'text-masala-accent'     },
     ];
 
     return (
@@ -42,7 +51,7 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-black text-masala-text">Analytics Dashboard</h1>
 
             {/* Metric cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {metrics.map((metric) => (
                     <div key={metric.label} className="rounded-xl bg-white border border-masala-border p-6 shadow-sm">
                         <div className="flex items-center gap-3 mb-3">

@@ -71,7 +71,7 @@ body {
   font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   background-color: transparent;
   color: var(--color-masala-text);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 h1, h2 {
@@ -81,6 +81,25 @@ h1, h2 {
 ::selection {
   background-color: rgba(139, 32, 32, 0.2);
   color: #8B2020;
+}
+
+/* ── Sidebar Custom Elegant Scrollbar ───────────────────────────────────────── */
+.sidebar-elegant-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-masala-border) transparent;
+}
+.sidebar-elegant-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-elegant-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-elegant-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-masala-border);
+  border-radius: 10px;
+}
+.sidebar-elegant-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-masala-primary);
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────────── */
@@ -250,8 +269,8 @@ a, button {
   100% { background-position: 0% 50%; }
 }
 .animate-gradient-shift {
-  background-size: 200% 200%;
-  animation: gradientShift 15s ease infinite;
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease-in-out infinite;
 }
 
 /* Slide In From Bottom */
@@ -439,7 +458,7 @@ a, button {
   height: 70%;
   top: -20%;
   left: -10%;
-  background: radial-gradient(ellipse, rgba(139, 32, 32, 0.09) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(230, 210, 180, 0.18) 0%, transparent 70%);
   animation: orbDrift 18s ease-in-out infinite alternate;
 }
 .hero-orb--accent {
@@ -447,7 +466,7 @@ a, button {
   height: 60%;
   bottom: -15%;
   right: -8%;
-  background: radial-gradient(ellipse, rgba(200, 75, 49, 0.07) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(212, 175, 55, 0.12) 0%, transparent 70%);
   animation: orbDrift 22s ease-in-out infinite alternate-reverse;
 }
 .hero-orb--warm {
@@ -455,7 +474,7 @@ a, button {
   height: 40%;
   top: 30%;
   left: 38%;
-  background: radial-gradient(ellipse, rgba(255, 180, 80, 0.06) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(255, 244, 224, 0.16) 0%, transparent 70%);
   animation: orbDrift 14s ease-in-out infinite alternate;
 }
 

@@ -7,13 +7,14 @@ import { findCategoryUrl } from '../categoryMap';
 export class DookanScraper extends BaseScraper {
     storeId = 'dookan';
     storeName = 'Dookan';
-    private baseUrl = 'https://www.dookan.de';
+    private baseUrl = 'https://eu.dookan.com';
 
     async scrape(query: string): Promise<ScraperResult> {
         const start = Date.now();
         const errors: string[] = [];
         const listings: ScrapedListing[] = [];
         const q = query.toLowerCase().trim();
+
 
         // Dookan's Shopify suggest.json returns excellent product JSON
         const endpoints = [

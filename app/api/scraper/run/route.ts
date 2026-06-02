@@ -41,8 +41,33 @@ export async function POST(request: NextRequest) {
     let totalListings = 0;
 
     try {
-        const results = storeIds?.length
-            ? await orchestrator.runSelected(query, storeIds)
+        let resolvedStoreSlugs: string[] | undefined;
+        if (storeIds && storeIds.length > 0) {
+            const { data: dbStores } = await supabase
+                .from('stores')
+                .select('id, domain')
+                .in('id', storeIds);
+
+            if (dbStores && dbStores.length > 0) {
+                const DOMAIN_TO_SCRAPER_MAP: Record<string, string> = {
+                    'grocera.de': 'grocera',
+                    'jamoona.com': 'jamoona',
+                    'littleindia.de': 'littleindia',
+                    'nammamarkt.com': 'nammamarkt',
+                    'eu.dookan.com': 'dookan',
+                    'swadesh.eu': 'swadesh',
+                    'angaadi-online.de': 'angaadi',
+                    'spicevillage.eu': 'spicevillage',
+                    'dostana-foods.com': 'dostana',
+                };
+                resolvedStoreSlugs = dbStores.map((s: any) => DOMAIN_TO_SCRAPER_MAP[s.domain]).filter(Boolean);
+            } else {
+                resolvedStoreSlugs = storeIds;
+            }
+        }
+
+        const results = resolvedStoreSlugs && resolvedStoreSlugs.length > 0
+            ? await orchestrator.runSelected(query, resolvedStoreSlugs)
             : await orchestrator.runAll(query);
 
         for (const result of results) {

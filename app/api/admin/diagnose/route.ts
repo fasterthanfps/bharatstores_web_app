@@ -30,8 +30,33 @@ export async function POST(request: NextRequest) {
     const query = 'basmati rice'; 
 
     try {
-        const results = storeId
-            ? await orchestrator.runSelected(query, [storeId])
+        const service = createServiceClient();
+        let targetStoreSlug: string | undefined;
+        if (storeId) {
+            const { data: store } = await service
+                .from('stores')
+                .select('domain')
+                .eq('id', storeId)
+                .maybeSingle();
+
+            if (store?.domain) {
+                const DOMAIN_TO_SCRAPER_MAP: Record<string, string> = {
+                    'grocera.de': 'grocera',
+                    'jamoona.com': 'jamoona',
+                    'littleindia.de': 'littleindia',
+                    'nammamarkt.com': 'nammamarkt',
+                    'eu.dookan.com': 'dookan',
+                    'swadesh.eu': 'swadesh',
+                    'angaadi-online.de': 'angaadi',
+                    'spicevillage.eu': 'spicevillage',
+                    'dostana-foods.com': 'dostana',
+                };
+                targetStoreSlug = DOMAIN_TO_SCRAPER_MAP[store.domain];
+            }
+        }
+
+        const results = targetStoreSlug
+            ? await orchestrator.runSelected(query, [targetStoreSlug])
             : await orchestrator.runAll(query);
 
         const diagnosticReports = results.map(result => {
@@ -73,7 +98,6 @@ export async function POST(request: NextRequest) {
         });
 
         // 3. Log diagnostic run as an audited scraper run to automatically update the dashboard
-        const service = createServiceClient();
         for (const report of diagnosticReports) {
             await service.from('scraper_runs').insert({
                 status: report.status === 'healthy' ? 'success' : 'error',

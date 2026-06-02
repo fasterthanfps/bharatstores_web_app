@@ -80,7 +80,7 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 pb-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-masala-primary" />
@@ -345,7 +345,7 @@ function FilterContent({ dynamicOptions }: { dynamicOptions?: FilterSidebarProps
 export default function FilterSidebar({ isMobileOpen, onMobileClose, resultCount, dynamicOptions }: FilterSidebarProps) {
   return (
     <>
-      <aside className="hidden lg:block w-56 flex-shrink-0 bg-white rounded-2xl border border-masala-border sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto">
+      <aside className="hidden lg:block w-56 flex-shrink-0 bg-white rounded-2xl border border-masala-border sticky top-[96px] self-start max-h-[calc(100vh-120px)] overflow-y-auto sidebar-elegant-scroll">
         <FilterContent dynamicOptions={dynamicOptions} />
       </aside>
 

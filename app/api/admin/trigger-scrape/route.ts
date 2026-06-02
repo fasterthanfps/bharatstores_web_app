@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { saveAndReturnListings } from '@/lib/search/engine';
 
 export async function POST(request: NextRequest) {
     // 1. Auth — must be an authenticated admin (session cookie, not CRON_SECRET)
@@ -44,9 +45,39 @@ export async function POST(request: NextRequest) {
             const { ScraperOrchestrator } = await import('@/lib/scraper');
             const orchestrator = new ScraperOrchestrator();
 
-            const results = storeId
-                ? await orchestrator.runSelected(query, [storeId])
+            // Map store UUID to scraper store slug
+            let targetStoreSlug: string | undefined;
+            if (storeId) {
+                const { data: store } = await service
+                    .from('stores')
+                    .select('domain')
+                    .eq('id', storeId)
+                    .maybeSingle();
+
+                if (store?.domain) {
+                    const DOMAIN_TO_SCRAPER_MAP: Record<string, string> = {
+                        'grocera.de': 'grocera',
+                        'jamoona.com': 'jamoona',
+                        'littleindia.de': 'littleindia',
+                        'nammamarkt.com': 'nammamarkt',
+                        'eu.dookan.com': 'dookan',
+                        'swadesh.eu': 'swadesh',
+                        'angaadi-online.de': 'angaadi',
+                        'spicevillage.eu': 'spicevillage',
+                        'dostana-foods.com': 'dostana',
+                    };
+                    targetStoreSlug = DOMAIN_TO_SCRAPER_MAP[store.domain];
+                }
+            }
+
+            const results = targetStoreSlug
+                ? await orchestrator.runSelected(query, [targetStoreSlug])
                 : await orchestrator.runAll(query);
+
+            // Save the listings to the database so they are updated
+            if (results && results.length > 0) {
+                await saveAndReturnListings(results, query, service, 'price');
+            }
 
             const allErrors: string[] = [];
             let totalListings = 0;
@@ -83,3 +114,4 @@ export async function POST(request: NextRequest) {
     // 5. Return immediately with the run ID so client can poll status
     return NextResponse.json({ success: true, runId }, { status: 202 });
 }
+

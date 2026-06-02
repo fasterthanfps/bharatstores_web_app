@@ -2,15 +2,15 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/layout/Header';
 import Link from 'next/link';
-import { BarChart3, Settings, GitMerge, BookOpen } from 'lucide-react';
+import { BarChart3, Settings2, FileText } from 'lucide-react';
+import LogoutButton from './LogoutButton';
 
 export const dynamic = 'force-dynamic';
 
 const NAV_LINKS = [
-    { href: '/admin',          label: 'Analytics',     icon: BarChart3 },
-    { href: '/admin/scrapers', label: 'Scrapers',      icon: Settings  },
-    { href: '/admin/catalog',  label: 'Catalog',       icon: GitMerge  },
-    { href: '/admin/rules',    label: 'Intent Rules',  icon: BookOpen  },
+    { href: '/admin',          label: 'Analytics', icon: BarChart3  },
+    { href: '/admin/scrapers', label: 'Scrapers',  icon: Settings2  },
+    { href: '/admin/blog',     label: 'Blog',      icon: FileText   },
 ];
 
 
@@ -44,6 +44,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                                 {label}
                             </Link>
                         ))}
+                        <LogoutButton />
                     </nav>
                     {children}
                 </div>
