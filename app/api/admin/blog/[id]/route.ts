@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const body = await req.json();
 
@@ -20,7 +21,7 @@ export async function PATCH(
   const { data: post, error } = await supabase
     .from('blog_posts')
     .update(updatePayload)
-    .eq('id', params.id)
+    .eq('id', id)
     .select('id, slug, title, excerpt, status, lang, tags, author, views, published_at, created_at, updated_at')
     .single();
 
@@ -30,10 +31,11 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
-  const { error } = await supabase.from('blog_posts').delete().eq('id', params.id);
+  const { error } = await supabase.from('blog_posts').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }
