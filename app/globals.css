@@ -417,10 +417,10 @@ a, button {
 
 
 
-/* ── Mobile Typography ──────────────────────────────────────────────────────── */
+/* ── Mobile Typography (clamp-based for responsive scaling) ─────────────────── */
 @media (max-width: 640px) {
-  h1 { font-size: 2.25rem !important; line-height: 1.2 !important; }
-  h2 { font-size: 1.5rem !important; }
+  h1 { font-size: clamp(1.75rem, 8vw, 2.5rem) !important; line-height: 1.15 !important; }
+  h2 { font-size: clamp(1.25rem, 5vw, 1.75rem) !important; line-height: 1.2 !important;  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -686,3 +686,58 @@ a, button {
 .animate-pulse-drop-indicator {
   animation: pulseDropIndicator 1.4s infinite ease-in-out;
 }
+
+/* ── Mobile Touch Improvements ─────────────────────────────────────────────── */
+
+/* Prevent iOS zoom on input focus (font-size < 16px triggers zoom) */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area insets for iPhone notch / Dynamic Island */
+.pb-safe  { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.pt-safe  { padding-top:    max(0px,  env(safe-area-inset-top));    }
+.mb-safe  { margin-bottom:  max(16px, env(safe-area-inset-bottom)); }
+
+/* Hide scrollbar utility */
+.no-scrollbar                    { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Active state on touch (replaces hover) */
+@media (hover: none) {
+  button:active, a:active {
+    opacity: 0.75;
+    transform: scale(0.97);
+    transition-duration: 0.1s;
+  }
+  /* Disable hover lift on touch devices */
+  .listing-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Responsive card grid helper */
+.grid-responsive-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 640px)  { .grid-responsive-cards { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+@media (min-width: 1024px) { .grid-responsive-cards { grid-template-columns: repeat(4, 1fr); } }
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid #8B2020;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+

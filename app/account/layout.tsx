@@ -22,59 +22,87 @@ export default async function AccountLayout({ children }: { children: React.Reac
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-    // Compute display name
+    // Compute display name & avatar
     const displayName = user.user_metadata?.name || user.user_metadata?.username || user.email || 'User';
     const avatarLetter = displayName[0].toUpperCase();
+    const emailUser = user.email?.split('@')[0] ?? 'User';
+    const emailDomain = user.email?.split('@')[1] ?? '';
 
     return (
         <>
             <Header />
-            <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-12">
+            <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                 <div className="mx-auto max-w-5xl">
-                    {/* User Greeting Hero Card */}
-                    <div className="bg-white rounded-3xl border border-masala-border/60 p-6 md:p-8 mb-8 shadow-sm relative overflow-hidden">
+                    {/* ── User Greeting Hero Card ── */}
+                    <div className="bg-white rounded-3xl border border-masala-border/60 p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 shadow-sm relative overflow-hidden">
                         {/* Decorative background glow orbs */}
                         <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-masala-primary/5 blur-2xl pointer-events-none" />
                         <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-masala-accent/5 blur-2xl pointer-events-none" />
 
-                        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-masala-primary to-masala-accent text-white flex items-center justify-center font-serif text-xl font-bold shadow-md shadow-masala-primary/10">
-                                    {avatarLetter}
+                        <div className="relative">
+                            {/* Top row: avatar + name + logout button */}
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {/* Avatar — smaller on mobile (FIX 2) */}
+                                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex-shrink-0 flex items-center justify-center text-lg sm:text-2xl font-black text-white bg-gradient-to-br from-masala-primary to-masala-accent shadow-md shadow-masala-primary/10">
+                                        {avatarLetter}
+                                    </div>
+
+                                    {/* Name / Email — split at @ to avoid mid-char truncation (FIX 1) */}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-masala-text-muted mb-0.5">
+                                            My Account
+                                        </p>
+                                        <p className="text-lg sm:text-xl font-black text-masala-text leading-tight"
+                                            style={{ fontFamily: 'Fraunces, serif' }}>
+                                            {emailUser}
+                                        </p>
+                                        {emailDomain && (
+                                            <p className="text-[11px] text-masala-text-muted font-medium">
+                                                @{emailDomain}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="text-xs font-bold text-masala-text-light uppercase tracking-wider">My Account</p>
-                                    <h1 className="text-xl md:text-2xl font-serif font-black text-masala-text mt-0.5 truncate max-w-[280px] sm:max-w-md lg:max-w-lg">{displayName}</h1>
-                                </div>
+
+                                {/* Logout — top-right corner of card (FIX 5) */}
+                                <form action="/api/auth/logout" method="POST">
+                                    <button
+                                        type="submit"
+                                        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-masala-border bg-masala-muted/40 text-[11px] font-bold text-masala-text-muted hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                                    >
+                                        <LogOut className="w-3.5 h-3.5" />
+                                        <span>Logout</span>
+                                    </button>
+                                </form>
                             </div>
-                            
-                            {/* Stats panel */}
-                            <div className="flex items-center gap-8 border-t md:border-t-0 md:border-l border-masala-border/60 pt-4 md:pt-0 md:pl-8">
-                                <div>
-                                    <span className="block text-2xl font-extrabold text-masala-primary font-serif">{clicksCount ?? 0}</span>
-                                    <span className="text-[11px] font-bold text-masala-text-muted uppercase tracking-wider">Total Clicks</span>
-                                </div>
-                                <div>
-                                    <span className="block text-2xl font-extrabold text-masala-accent font-serif">{alertsCount ?? 0}</span>
-                                    <span className="text-[11px] font-bold text-masala-text-muted uppercase tracking-wider">Price Alerts</span>
-                                </div>
+
+                            {/* Stats — icon + text horizontal layout (FIX 3) */}
+                            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-masala-border/60">
+                                {[
+                                    { value: clicksCount ?? 0, label: 'Total Clicks', icon: '👆', color: 'text-masala-primary' },
+                                    { value: alertsCount ?? 0, label: 'Price Alerts', icon: '🔔', color: 'text-amber-600' },
+                                ].map(stat => (
+                                    <div key={stat.label}
+                                        className="flex items-center gap-2.5 p-2.5 rounded-xl bg-masala-muted/40">
+                                        <span className="text-xl flex-shrink-0">{stat.icon}</span>
+                                        <div>
+                                            <p className={`text-lg font-black leading-none ${stat.color}`}>
+                                                {stat.value.toLocaleString()}
+                                            </p>
+                                            <p className="text-[10px] text-masala-text-muted font-medium mt-0.5 uppercase tracking-wide">
+                                                {stat.label}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* Navigation bar with tab options and logout */}
-                    <nav className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-masala-border/40 pb-6">
+                    {/* Navigation — horizontal scroll on mobile with short labels (FIX 4) */}
+                    <nav className="mb-6 sm:mb-8 border-b border-masala-border/40 pb-5">
                         <AccountNav />
-                        
-                        <form action="/api/auth/logout" method="POST" className="self-end sm:self-auto">
-                            <button
-                                type="submit"
-                                className="flex items-center gap-2 text-xs font-bold text-masala-text-muted hover:text-masala-primary transition-all bg-masala-muted/60 hover:bg-masala-muted hover:scale-[1.02] active:scale-[0.98] px-4 py-2.5 rounded-xl border border-masala-border/40 shadow-sm cursor-pointer"
-                            >
-                                <LogOut className="h-3.5 w-3.5 stroke-[2.5]" />
-                                Logout
-                            </button>
-                        </form>
                     </nav>
 
                     <div className="animate-fade-up">

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
-import { ShoppingBag, Sparkles, ExternalLink } from 'lucide-react';
+import { ShoppingBag, Sparkles, ChevronRight } from 'lucide-react';
 import { formatEUR } from '@/lib/utils/currency';
 import { getProductPlaceholder } from '@/lib/utils/image';
 import Link from 'next/link';
@@ -73,7 +73,6 @@ export default async function AccountPage() {
                 .limit(50);
 
             if (data) {
-                // Filter out clicked listings and shuffle/take 12
                 suggestions = data
                     .filter(item => !clickedListingIds.has(item.id))
                     .sort(() => Math.random() - 0.5)
@@ -82,7 +81,7 @@ export default async function AccountPage() {
         }
     }
 
-    // 3. Fallback: if no history or no results match the history, get popular products
+    // 3. Fallback: popular products
     if (suggestions.length === 0) {
         const { data: defaultListings } = await supabase
             .from('listings')
@@ -98,25 +97,29 @@ export default async function AccountPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-serif font-black text-masala-text flex items-center gap-2">
+        <div className="space-y-4 sm:space-y-6">
+            {/* FIX 6 — Section heading: smaller + inline subtitle */}
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <h2
+                    className="text-lg sm:text-2xl font-black text-masala-text flex items-center gap-2"
+                    style={{ fontFamily: 'Fraunces, serif' }}
+                >
                     <Sparkles className="h-5 w-5 text-masala-accent stroke-[2.5]" />
                     Suggested for You
                 </h2>
-                {suggestions.length > 0 && (
-                    <span className="text-xs font-bold text-masala-text-light bg-masala-muted/60 px-3 py-1 rounded-full border border-masala-border/40">
-                        Based on your search history
-                    </span>
-                )}
+                <span className="text-[10px] text-masala-text-muted font-medium flex-shrink-0 ml-2">
+                    From your searches
+                </span>
             </div>
 
             {suggestions.length === 0 && (
-                <div className="text-center py-20 bg-white rounded-3xl border border-masala-border/60 p-8 shadow-sm">
+                <div className="text-center py-16 sm:py-20 bg-white rounded-3xl border border-masala-border/60 p-6 sm:p-8 shadow-sm">
                     <div className="w-16 h-16 bg-masala-muted/60 text-masala-text-light flex items-center justify-center rounded-2xl mx-auto mb-4 border border-masala-border/40">
                         <ShoppingBag className="h-7 w-7" />
                     </div>
-                    <h3 className="text-base font-serif font-black text-masala-text mb-1">No suggestions available</h3>
+                    <h3 className="text-base font-black text-masala-text mb-1" style={{ fontFamily: 'Fraunces, serif' }}>
+                        No suggestions available
+                    </h3>
                     <p className="text-masala-text-muted text-xs max-w-sm mx-auto mb-6">
                         Explore more products on our platform to get personalized recommendations!
                     </p>
@@ -129,77 +132,51 @@ export default async function AccountPage() {
                 </div>
             )}
 
+            {/* FIX 7 — Full-width horizontal list on mobile, grid on sm+ */}
             {suggestions.length > 0 && (
-                <div className="grid gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {suggestions.map((listing) => {
                         const resolvedImage = listing.image_url || listing.products?.image_url || getProductPlaceholder(listing.products?.category, listing.products?.name);
 
                         return (
-                            <div 
-                                key={listing.id} 
-                                className="bg-white rounded-2xl border border-masala-border/60 p-4 flex items-center justify-between gap-4 hover:border-masala-primary/30 transition-all hover:shadow-md hover:shadow-masala-primary/2 animate-fade-in"
+                            <div
+                                key={listing.id}
+                                className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-masala-border hover:border-masala-primary/20 transition-all animate-fade-in"
                             >
-                                <div className="flex items-center gap-4 min-w-0 flex-1">
-                                    {/* Product Image */}
-                                    <div className="flex-shrink-0 w-14 h-14 rounded-xl border border-masala-border/40 bg-masala-muted/20 overflow-hidden flex items-center justify-center p-1.5 relative">
-                                        <img
-                                            src={resolvedImage}
-                                            alt={listing.products?.name || 'Product'}
-                                            className="w-full h-full object-contain mix-blend-multiply"
-                                        />
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <span className="text-[10px] font-bold text-masala-accent uppercase tracking-wider">
-                                            {listing.products?.category || 'Indian Grocery'}
-                                        </span>
-                                        {listing.products?.slug ? (
-                                            <Link 
-                                                href={`/product/${listing.products.slug}`} 
-                                                className="font-bold text-masala-text text-sm hover:text-masala-primary transition-colors truncate block"
-                                            >
-                                                {listing.products.name}
-                                            </Link>
-                                        ) : (
-                                            <span className="font-bold text-masala-text text-sm truncate block">
-                                                {listing.products?.name ?? 'Unknown Product'}
-                                            </span>
-                                        )}
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <span className="inline-block text-[9px] font-extrabold text-masala-primary bg-masala-muted px-2 py-0.5 rounded-md border border-masala-border/30">
-                                                {listing.store_name ?? 'Shop'}
-                                            </span>
-                                        </div>
-                                    </div>
+                                {/* Product image */}
+                                <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-masala-muted/40 flex items-center justify-center overflow-hidden border border-masala-border/40">
+                                    <img
+                                        src={resolvedImage}
+                                        alt={listing.products?.name || 'Product'}
+                                        className="w-full h-full object-contain p-1 mix-blend-multiply"
+                                    />
                                 </div>
 
-                                <div className="flex items-center gap-4 flex-shrink-0">
-                                    <div className="text-right">
-                                        {listing.price && (
-                                            <p className="text-sm font-black text-masala-text">
-                                                {formatEUR(listing.price)}
-                                            </p>
-                                        )}
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-masala-accent bg-masala-accent/5 px-2 py-0.5 rounded-md border border-masala-accent/20 mt-1">
-                                            <Sparkles className="h-2.5 w-2.5 stroke-[2.5]" />
-                                            Suggested
+                                {/* Details */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-bold uppercase text-masala-text-muted mb-0.5 truncate">
+                                        {listing.products?.category || 'Indian Grocery'} · {listing.store_name ?? 'Shop'}
+                                    </p>
+                                    {listing.products?.slug ? (
+                                        <Link
+                                            href={`/product/${listing.products.slug}`}
+                                            className="text-sm font-semibold text-masala-text hover:text-masala-primary transition-colors line-clamp-2 leading-snug block"
+                                        >
+                                            {listing.products.name}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-sm font-semibold text-masala-text line-clamp-2 leading-snug block">
+                                            {listing.products?.name ?? 'Unknown Product'}
                                         </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-1 border-l border-masala-border/50 pl-4">
-                                        {listing.product_url && (
-                                            <a
-                                                href={listing.product_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2.5 text-masala-text-muted hover:text-masala-primary hover:bg-masala-muted/60 rounded-xl transition-all"
-                                                title="Buy on Store"
-                                            >
-                                                <ExternalLink className="h-4 w-4 stroke-[2.5]" />
-                                            </a>
-                                        )}
-                                    </div>
+                                    )}
+                                    {listing.price && (
+                                        <p className="text-sm font-black text-masala-primary mt-1">
+                                            {formatEUR(listing.price)}
+                                        </p>
+                                    )}
                                 </div>
+
+                                <ChevronRight className="w-4 h-4 text-masala-text-muted flex-shrink-0" />
                             </div>
                         );
                     })}
