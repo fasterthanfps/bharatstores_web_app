@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import type { ApiResponse } from '@/types/api';
 
@@ -28,11 +28,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { listingId, sessionId } = parsed.data;
-    const supabase = await createClient();
+    const supabaseClient = await createClient();
+    const serviceClient = createServiceClient();
 
-    const { error } = await supabase.from('clicks').insert({
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    const { error } = await serviceClient.from('clicks').insert({
         listing_id: listingId,
         session_id: sessionId,
+        user_id: user?.id ?? null,
         referrer: request.headers.get('referer') ?? null,
     });
 

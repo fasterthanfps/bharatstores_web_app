@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { createHash } from 'crypto';
 
 // Hash IP for privacy (GDPR compliant)
@@ -53,11 +53,15 @@ export async function GET(request: NextRequest) {
         request.headers.get('x-real-ip') ??
         '0.0.0.0';
 
-    void supabase
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const serviceClient = createServiceClient();
+    await serviceClient
         .from('clicks')
         .insert({
             listing_id: listing.id,
             session_id: sessionId,
+            user_id: user?.id ?? null,
             ip_hash: hashIp(ip),
             referrer: request.headers.get('referer') ?? null,
         });

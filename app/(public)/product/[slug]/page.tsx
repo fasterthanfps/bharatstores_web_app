@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
+import ProductPageImage from '@/components/product/ProductPageImage';
 import Link from 'next/link';
 import { Package, ArrowLeft, TrendingUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -181,19 +181,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
                 {/* Product header */}
                 <div className="glass-card p-6 flex gap-5 flex-wrap">
-                    <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-white/5 border border-white/8 overflow-hidden flex items-center justify-center">
-                        {displayImage ? (
-                            <Image
-                                src={displayImage}
-                                alt={product.name}
-                                width={96}
-                                height={96}
-                                className="object-contain"
-                                unoptimized
-                            />
-                        ) : (
-                            <Package className="h-10 w-10 text-gray-600" />
-                        )}
+                    <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-white/5 border border-white/8 overflow-hidden flex items-center justify-center p-2">
+                        <ProductPageImage
+                            primaryImage={displayImage}
+                            category={product.category}
+                            productName={product.name}
+                            alternativeImages={listings.map(l => l.image_url).filter(Boolean) as string[]}
+                        />
                     </div>
 
                     <div className="flex-1 min-w-0">

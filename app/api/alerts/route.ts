@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
         .from('price_alerts')
-        .select('*, listings(product_url, store_name, price)')
+        .select('*, listings(product_url, store_name, price, image_url, products(name, slug, category, image_url))')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 

@@ -23,12 +23,26 @@ interface ProductCardProps {
 export default function ProductCard({ listing, rank, searchQuery, isCompared, onCompareToggle, isBestPrice, position }: ProductCardProps) {
   const router = useRouter();
   const [modalOpen,    setModalOpen]    = useState(false);
-  const [imgSrc,       setImgSrc]       = useState(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
-  const [wishlisted,   setWishlisted]   = useState(false);
+  const candidateImages = useMemo(() => {
+    const urls = new Set<string>();
+    if (listing.image_url) urls.add(listing.image_url);
+    if (listing.allPrices) {
+      listing.allPrices.forEach(p => {
+        if (p.image_url) urls.add(p.image_url);
+      });
+    }
+    const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
+    return [...Array.from(urls), fallback];
+  }, [listing.image_url, listing.allPrices, listing.product_category, listing.product_name]);
+
+  const [imageIndex, setImageIndex] = useState(0);
 
   useEffect(() => {
-    setImgSrc(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
-  }, [listing.image_url, listing.product_category, listing.product_name]);
+    setImageIndex(0);
+  }, [candidateImages]);
+
+  const currentImgSrc = candidateImages[imageIndex];
+  const [wishlisted,   setWishlisted]   = useState(false);
 
   const { addItem, removeItem, items, updateQuantity } = useSmartCart();
 
@@ -87,14 +101,13 @@ export default function ProductCard({ listing, rank, searchQuery, isCompared, on
           {/* ── IMAGE ZONE ── */}
           <div className="relative w-full aspect-square bg-[#F6F1EA]/60 rounded-[18px] overflow-hidden mb-2.5">
             <img
-              src={imgSrc}
+              src={currentImgSrc}
               alt={listing.product_name}
               className="absolute inset-0 w-full h-full object-contain p-3
                 group-hover:scale-105 transition-transform duration-300"
               onError={() => {
-                const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
-                if (imgSrc !== fallback) {
-                  setImgSrc(fallback);
+                if (imageIndex < candidateImages.length - 1) {
+                  setImageIndex(prev => prev + 1);
                 }
               }}
               loading="lazy"

@@ -45,7 +45,6 @@ export default function ProductModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeStore, setActiveStore] = useState<string>('');
-  const [imgSrc, setImgSrc] = useState<string>('');
 
   const { addItem, removeItem, items } = useSmartCart();
 
@@ -123,11 +122,7 @@ export default function ProductModal({
             const bestInStock = sorted.find((p: any) => p.inStock);
             setActiveStore((bestInStock || sorted[0]).storeSlug);
           }
-          const imageUrl = resData?.product?.imageUrl;
-          const category = resData?.product?.category;
-          const name = resData?.product?.name;
-          setImgSrc(imageUrl || getProductPlaceholder(category, name));
-          setLoading(false);
+           setLoading(false);
         }, delay);
       })
       .catch((err) => {
@@ -174,6 +169,26 @@ export default function ProductModal({
   const product = data?.product;
   const history = data?.history || [];
   const alternatives = data?.alternatives || [];
+
+  const candidateImages = useMemo(() => {
+    const urls = new Set<string>();
+    if (product?.imageUrl) urls.add(product.imageUrl);
+    if (product?.prices) {
+      product.prices.forEach((p: any) => {
+        if (p.imageUrl) urls.add(p.imageUrl);
+      });
+    }
+    const fallback = getProductPlaceholder(product?.category, product?.name);
+    return [...Array.from(urls), fallback];
+  }, [product?.imageUrl, product?.prices, product?.category, product?.name]);
+
+  const [imageIndex, setImageIndex] = useState(0);
+
+  useEffect(() => {
+    setImageIndex(0);
+  }, [candidateImages]);
+
+  const currentImgSrc = candidateImages[imageIndex];
 
   // Active store's listing/price details
   const activeListing = useMemo(() => {
@@ -290,7 +305,7 @@ export default function ProductModal({
         </div>
         
         {/* Header Section */}
-        <div className="p-6 pb-4 border-b border-[#EAE3D8] flex items-start justify-between bg-white/40 backdrop-blur-md sticky top-0 rounded-t-[2.5rem] z-20">
+        <div className="p-6 pb-4 border-b border-[#EAE3D8] flex items-start justify-between bg-[#FAF9F6] sticky top-0 rounded-t-[2.5rem] z-20">
           <div className="flex-1 min-w-0 pr-4">
             {/* Top badge row */}
             <div className="flex items-center gap-2 mb-1.5">
@@ -337,7 +352,7 @@ export default function ProductModal({
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 rounded-full border border-masala-border/40 bg-white/95 backdrop-blur-sm flex items-center justify-center text-masala-text hover:border-masala-primary hover:text-masala-primary hover:rotate-90 hover:scale-105 active:scale-95 shadow-sm transition-all duration-300 flex-shrink-0"
+            className="w-10 h-10 rounded-full border border-masala-border/40 bg-white flex items-center justify-center text-masala-text hover:border-masala-primary hover:text-masala-primary hover:rotate-90 hover:scale-105 active:scale-95 shadow-sm transition-all duration-300 flex-shrink-0"
             aria-label="Close details"
           >
             <X className="h-5 w-5" />
@@ -345,7 +360,14 @@ export default function ProductModal({
         </div>
 
         {/* Content Section */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div 
+          className="p-6 overflow-y-auto flex-1"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            transform: 'translate3d(0, 0, 0)',
+            willChange: 'scroll-position'
+          }}
+        >
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-12 h-12 rounded-full border-4 border-masala-primary border-t-transparent animate-spin" />
@@ -371,13 +393,12 @@ export default function ProductModal({
             <div className="md:hidden flex items-center gap-3 px-4 py-3 -mx-6 -mt-6 mb-6 border-b border-masala-border bg-white">
               <div className="w-14 h-14 flex-shrink-0 bg-masala-muted rounded-xl overflow-hidden flex items-center justify-center p-1">
                 <img
-                  src={imgSrc}
+                  src={currentImgSrc}
                   alt={product?.name}
                   className="w-full h-full object-contain"
                   onError={() => {
-                    const fallback = getProductPlaceholder(product?.category, product?.name);
-                    if (imgSrc !== fallback) {
-                      setImgSrc(fallback);
+                    if (imageIndex < candidateImages.length - 1) {
+                      setImageIndex(prev => prev + 1);
                     }
                   }}
                 />
@@ -412,27 +433,27 @@ export default function ProductModal({
                 
                 {/* Image — fixed height, glowing brand color light halo */}
                 <div className="flex-shrink-0 h-[220px] bg-white rounded-3xl border border-masala-border/40 flex items-center justify-center p-4 relative overflow-hidden shadow-inner">
-                  {/* Radial gradient bg */}
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#faf6ef_0%,_#ffffff_80%)]" />
-                  {/* Store-colored halo */}
+                  {/* Radial gradient bg with store-colored halo (no heavy blur-2xl filter) */}
                   {(() => {
                     const best = product?.prices?.find((p: any) => p.inStock);
                     const sc = best ? getStoreConfig(best.storeSlug) : null;
                     return (
                       <div
-                        className="absolute inset-4 rounded-xl opacity-25 blur-2xl transition-all duration-500"
-                        style={{ background: sc?.color ?? '#f4efe8' }}
+                        className="absolute inset-0 transition-all duration-500"
+                        style={{
+                          background: `radial-gradient(circle at center, ${sc?.color ?? '#f4efe8'} 0%, #faf6ef 60%, #ffffff 100%)`,
+                          opacity: 0.8
+                        }}
                       />
                     );
                   })()}
                   <img
-                    src={imgSrc}
+                    src={currentImgSrc}
                     alt={product?.name}
                     className="relative z-10 max-h-full max-w-full object-contain drop-shadow-xl hover:scale-110 transition-transform duration-500"
                     onError={() => {
-                      const fallback = getProductPlaceholder(product?.category, product?.name);
-                      if (imgSrc !== fallback) {
-                        setImgSrc(fallback);
+                      if (imageIndex < candidateImages.length - 1) {
+                        setImageIndex(prev => prev + 1);
                       }
                     }}
                   />
@@ -516,9 +537,13 @@ export default function ProductModal({
                 {/* Store Analytics Overview */}
                 {activeListing && (
                   <div className="bg-gradient-to-br from-white to-[#FAF6EE] rounded-[2rem] border border-white/60 p-6 space-y-4 shadow-[0_8px_24px_rgba(28,20,16,0.03)] relative overflow-hidden">
+                    {/* Store color glow (radial gradient for smooth scrolling performance) */}
                     <div 
-                      className="absolute right-0 top-0 w-32 h-32 rounded-full opacity-[0.04] blur-2xl pointer-events-none"
-                      style={{ background: storeConfig?.color }}
+                      className="absolute right-0 top-0 w-32 h-32 rounded-full pointer-events-none"
+                      style={{ 
+                        background: `radial-gradient(circle at top right, ${storeConfig?.color ?? 'transparent'} 0%, transparent 70%)`,
+                        opacity: 0.15
+                      }}
                     />
                     <div className="flex items-start justify-between relative z-10">
                       <div>
@@ -751,7 +776,7 @@ export default function ProductModal({
 
                 {/* Delivery & Shipping Info */}
                 {deliveryInfo && (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-masala-border/40 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <div className="bg-white rounded-3xl border border-masala-border/40 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 flex-shrink-0">
                       <Truck className="h-5 w-5" />
                     </div>

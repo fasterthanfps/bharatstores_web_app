@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildUTMUrl, anonymizeIP } from '@/lib/utm';
-import { createServiceClient } from '@/lib/supabase/server';
-import { headers } from 'next/headers';
+import { createServiceClient, createClient } from '@/lib/supabase/server';
+import { headers, cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -68,18 +68,28 @@ export async function GET(request: NextRequest) {
     const isTablet  = /ipad|tablet/i.test(userAgent);
     const deviceType = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop';
 
-    // Fire-and-forget click log to existing 'clicks' table
-    void (supabase.from('clicks' as any) as any).insert({
+    // Get current logged in user to associate clicks
+    const clientSupabase = await createClient();
+    const { data: { user } } = await clientSupabase.auth.getUser();
+
+    // Get session ID from query param, cookie, or fallback to 'unknown'
+    const cookieStore = await cookies();
+    const sessionId = searchParams.get('sid') 
+                   || cookieStore.get('bs_sid')?.value 
+                   || 'unknown';
+
+    // Await click log to existing 'clicks' table
+    const { error: insertError } = await (supabase.from('clicks' as any) as any).insert({
       listing_id:      listing.id,
-      session_id:      null,
+      session_id:      sessionId,
+      user_id:         user?.id ?? null,
       ip_hash:         ipAnonymized,
       referrer:        searchQuery ?? null,
-      price:           listing.price ?? 0,
-      store_slug:      storeSlug,
-      result_position: position,
-      device_type:     deviceType,
-      user_agent:      userAgent.slice(0, 200),
     });
+
+    if (insertError) {
+      console.error('[redirect] Click insertion error:', insertError);
+    }
 
     // Redirect immediately — 302 so browsers don't cache
     return NextResponse.redirect(destinationUrl, { status: 302 });

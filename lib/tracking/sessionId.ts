@@ -8,9 +8,26 @@ export function getSessionId(): string {
 
     let sid = localStorage.getItem(SESSION_KEY);
     if (!sid) {
+        // Try reading from cookie first to align session
+        const match = document.cookie.match(new RegExp('(^| )' + SESSION_KEY + '=([^;]+)'));
+        if (match) {
+            sid = match[2];
+            localStorage.setItem(SESSION_KEY, sid);
+        }
+    }
+
+    if (!sid) {
         sid = generateId();
         localStorage.setItem(SESSION_KEY, sid);
     }
+
+    // Always ensure cookie is set/renewed
+    try {
+        document.cookie = `${SESSION_KEY}=${sid}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (e) {
+        console.warn('Failed to set session cookie:', e);
+    }
+
     return sid;
 }
 

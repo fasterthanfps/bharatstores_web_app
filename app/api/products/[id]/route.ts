@@ -245,6 +245,7 @@ export async function GET(
         storeHandle: l.store_handle || null,
         variantId: l.variant_id || null,
         updatedAt: l.updated_at ? new Date(l.updated_at).toISOString() : new Date().toISOString(),
+        imageUrl: l.image_url || null,
       };
     });
 

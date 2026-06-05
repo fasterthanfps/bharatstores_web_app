@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ShoppingCart, Plus, Check, ExternalLink, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { buildRedirectUrl } from '@/lib/utm';
 import { getStoreConfig } from '@/lib/stores';
@@ -42,23 +42,36 @@ export default function ProductCardImage({
         position,
     });
 
-    const [imgSrc, setImgSrc] = useState(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
+    const candidateImages = useMemo(() => {
+        const urls = new Set<string>();
+        if (listing.image_url) urls.add(listing.image_url);
+        if (listing.allPrices) {
+            listing.allPrices.forEach(p => {
+                if (p.image_url) urls.add(p.image_url);
+            });
+        }
+        const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
+        return [...Array.from(urls), fallback];
+    }, [listing.image_url, listing.allPrices, listing.product_category, listing.product_name]);
+
+    const [imageIndex, setImageIndex] = useState(0);
 
     useEffect(() => {
-        setImgSrc(listing.image_url || getProductPlaceholder(listing.product_category, listing.product_name));
-    }, [listing.image_url, listing.product_category, listing.product_name]);
+        setImageIndex(0);
+    }, [candidateImages]);
+
+    const currentImgSrc = candidateImages[imageIndex];
 
     return (
         <div className="relative bg-gradient-to-b from-masala-muted/20 to-masala-muted/40 aspect-[4/3] flex items-center justify-center overflow-hidden">
             <img
-                src={imgSrc}
+                src={currentImgSrc}
                 alt={listing.product_name}
                 className="w-full h-full object-contain p-3 group-hover:scale-[1.04] transition-transform duration-400"
                 loading="lazy"
                 onError={() => {
-                    const fallback = getProductPlaceholder(listing.product_category, listing.product_name);
-                    if (imgSrc !== fallback) {
-                        setImgSrc(fallback);
+                    if (imageIndex < candidateImages.length - 1) {
+                        setImageIndex(prev => prev + 1);
                     }
                 }}
             />
